@@ -69,7 +69,9 @@ export function initViewer3d(canvas) {
   roomEnv.dispose();
 
   buildScene();
-  applyEnvPreset('livingRoom');
+
+  // Auto-load the first IBL image (non-blocking)
+  loadIBLByPath('./IBL/IBL_01.jpg');
 
   animating = true;
   animate();
@@ -216,22 +218,22 @@ function applyDisplayAdjustments(src) {
   for (let i = 0; i < px.length; i += 4) {
     let r = px[i], g = px[i + 1], b = px[i + 2];
 
-    // Exposure — scale all channels (includes IBL room brightness)
-    r *= effectiveExposure; g *= effectiveExposure; b *= effectiveExposure;
-
-    // White balance — temperature shifts red/blue, tint shifts green
+    // 1. White balance — colour profile, applied before lighting
     r += temperature; b -= temperature; g += tint;
 
-    // Saturation — lerp towards luminance
+    // 2. Saturation — lerp towards luminance
     const lum = 0.299 * r + 0.587 * g + 0.114 * b;
     r = lum + saturation * (r - lum);
     g = lum + saturation * (g - lum);
     b = lum + saturation * (b - lum);
 
-    // Contrast — pivot at 128
+    // 3. Contrast — pivot at 128
     r = (r - 128) * contrast + 128;
     g = (g - 128) * contrast + 128;
     b = (b - 128) * contrast + 128;
+
+    // 4. Exposure × IBL — lighting scale applied last so IBL=0 → black
+    r *= effectiveExposure; g *= effectiveExposure; b *= effectiveExposure;
 
     // Shadows / midtones / highlights — smooth zone weights that sum to ~1
     // w_s peaks at 0, w_m peaks at 128, w_h peaks at 255
@@ -255,33 +257,40 @@ function applyDisplayAdjustments(src) {
   return c;
 }
 
-// ─── IBL FROM FILE ────────────────────────────────────────────
+// ─── IBL FROM FILE PATH ───────────────────────────────────────
+export async function loadIBLByPath(path) {
+  try {
+    const loader = new THREE.TextureLoader();
+    const texture = await loader.loadAsync(path);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    const envTexture = pmremGenerator.fromEquirectangular(texture).texture;
+    scene.environment = envTexture;
+    scene.background = texture;
+  } catch (err) {
+    console.error('IBL load failed:', path, err);
+  }
+}
+
+// ─── IBL FROM FILE (user-picked file, kept for future use) ────
 export async function loadIBLFromFile(file) {
   const url = URL.createObjectURL(file);
   const ext = file.name.split('.').pop().toLowerCase();
-  let texture;
-
   try {
+    let texture;
     if (ext === 'hdr') {
       const loader = new RGBELoader();
       texture = await loader.loadAsync(url);
     } else {
-      // Equirectangular JPEG / PNG
       const loader = new THREE.TextureLoader();
       texture = await loader.loadAsync(url);
       texture.colorSpace = THREE.SRGBColorSpace;
     }
     texture.mapping = THREE.EquirectangularReflectionMapping;
-
-    // Replace environment map
     const envTexture = pmremGenerator.fromEquirectangular(texture).texture;
     scene.environment = envTexture;
     scene.background = texture;
     texture.dispose();
-
-    // Update filename label
-    const label = document.getElementById('iblFileName');
-    if (label) label.textContent = file.name;
   } catch (err) {
     console.error('IBL load failed:', err);
   } finally {
@@ -298,16 +307,6 @@ export function setIBLIntensity(value) {
   refreshDisplayTexture();
 }
 
-// ─── ENVIRONMENT PRESET ───────────────────────────────────────
-export function applyEnvPreset(name) {
-  currentEnv = name;
-  const p = ENV_PRESETS[name] || ENV_PRESETS.livingRoom;
-  scene.background = new THREE.Color(p.bg);
-
-  document.querySelectorAll('.env-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.env === name);
-  });
-}
 
 // ─── CAMERA CONTROLS ─────────────────────────────────────────
 export function resetCamera() { controls.reset(); }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,310 +15,260 @@
   }
   </script>
 </head>
+
 <body>
 
-<div class="app">
-  <div class="main-area">
+  <div class="app">
+    <div class="main-area">
 
-    <!-- ── VIEWPORT ─────────────────────────────────────────── -->
-    <div class="viewport">
+      <!-- ── VIEWPORT ─────────────────────────────────────────── -->
+      <div class="viewport">
 
-      <!-- View tabs -->
-      <div class="view-tabs">
-        <button class="view-tab active" data-tab="image">Image View</button>
-        <button class="view-tab" data-tab="3d">3D View</button>
-      </div>
-
-      <!-- View area -->
-      <div class="view-area" id="viewArea">
-
-        <!-- 2D canvas (image view) -->
-        <canvas id="canvas2d"></canvas>
-
-        <!-- 3D canvas (3D view) -->
-        <canvas id="canvas3d" style="display:none;"></canvas>
-
-        <!-- Drop zone (shown when queue is empty) -->
-        <div class="drop-zone active" id="dropZone">
-          <div class="drop-box" id="dropBox">
-            <input type="file" id="fileInput" accept="image/*" multiple>
-            <div class="drop-icon">⬚</div>
-            <div class="drop-hint">Drop images here or <b>click to browse</b><br>PNG, JPG, WebP · Multiple files OK</div>
-          </div>
+        <!-- View tabs -->
+        <div class="view-tabs">
+          <button class="view-tab active" data-tab="image">Source Image</button>
+          <button class="view-tab" data-tab="firmware">Processed</button>
+          <button class="view-tab" data-tab="3d">3D View</button>
         </div>
 
-        <!-- Hint when images exist but none selected -->
-        <div class="selection-hint" id="selectionHint" style="display:none;">
-          <div class="selection-hint-icon">↓</div>
-          <div class="selection-hint-text">Select an image in the strip below</div>
-        </div>
+        <!-- View area -->
+        <div class="view-area" id="viewArea">
 
-        <!-- Crop toolbar (floating, top-center) -->
-        <div class="crop-toolbar" id="cropToolbar" style="display:none;">
-          <span class="crop-toolbar-label" id="cropRatioLabel">✂ 5:3</span>
-          <button class="btn btn-ghost btn-sm" id="btnAutoFit">Auto-Fit</button>
-          <button class="btn btn-ghost btn-sm" id="btnCancelCrop">Cancel</button>
-          <button class="btn btn-primary btn-sm" id="btnApplyCrop">Apply →</button>
-        </div>
+          <!-- Image view canvas -->
+          <canvas id="canvas2d"></canvas>
 
-        <!-- Crop size info (floating, bottom-center) -->
-        <div class="crop-size-info" id="cropSizeInfo" style="display:none;"></div>
+          <!-- Firmware view canvas -->
+          <canvas id="canvasFirmware" style="display:none;"></canvas>
 
-        <!-- Image view — crop button row (floating bottom-left) -->
-        <div id="cropControls" style="display:none; position:absolute; bottom:14px; left:14px; z-index:20; gap:6px; align-items:center; pointer-events:auto;">
-          <button class="btn btn-secondary btn-sm" id="btnCrop">✂ Crop</button>
-          <button class="btn btn-ghost btn-sm" id="resetCropBtn" style="display:none;">↩ Reset</button>
-        </div>
+          <!-- 3D canvas -->
+          <canvas id="canvas3d" style="display:none;"></canvas>
 
-        <!-- 3D controls overlay (floating bottom) -->
-        <div class="controls-3d" id="controls3d" style="display:none;">
-          <div class="controls-left">
-            <button class="btn btn-secondary btn-sm active" id="btnZoom">Zoom</button>
-            <button class="btn btn-secondary btn-sm active" id="btnOrbit">Orbit</button>
-            <button class="btn btn-secondary btn-sm" id="btnReset">Reset</button>
+          <!-- Drop zone -->
+          <div class="drop-zone active" id="dropZone">
+            <div class="drop-box" id="dropBox">
+              <input type="file" id="fileInput" accept="image/*" multiple>
+              <div class="drop-icon">⬚</div>
+              <div class="drop-hint">Drop images here or <b>click to browse</b><br>PNG, JPG, WebP · Multiple files OK
+              </div>
+            </div>
           </div>
-          <div class="controls-center">
-            <span class="time-label" style="min-width:28px;">IBL</span>
-            <input type="range" id="iblSlider" min="0" max="3" step="0.05" value="1">
-            <span class="time-label" id="iblLabel">1.0×</span>
-          </div>
-        </div>
 
-        <!-- Debug adjustments panel (floating top-left, 3D only) -->
-        <div class="debug-panel" id="debugPanel" style="display:none;">
-          <div class="debug-panel-title">Display Adjustments</div>
-          <div class="debug-row">
-            <span class="debug-label">Exposure</span>
-            <input type="range" class="debug-slider" id="adjExposure"    min="0.1" max="3"    step="0.01" value="0.89">
-            <span class="debug-val" id="adjExposureVal">0.89</span>
+          <!-- Hint when images exist but none selected -->
+          <div class="selection-hint" id="selectionHint" style="display:none;">
+            <div class="selection-hint-icon">↓</div>
+            <div class="selection-hint-text">Select an image in the strip below</div>
           </div>
-          <div class="debug-row">
-            <span class="debug-label">Contrast</span>
-            <input type="range" class="debug-slider" id="adjContrast"    min="0"   max="2"    step="0.01" value="0.91">
-            <span class="debug-val" id="adjContrastVal">0.91</span>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">Saturation</span>
-            <input type="range" class="debug-slider" id="adjSaturation"  min="0"   max="2"    step="0.01" value="1.00">
-            <span class="debug-val" id="adjSaturationVal">1.00</span>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">Temp</span>
-            <input type="range" class="debug-slider" id="adjTemperature" min="-100" max="100" step="1"    value="2">
-            <span class="debug-val" id="adjTemperatureVal">+2</span>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">Tint</span>
-            <input type="range" class="debug-slider" id="adjTint"        min="-100" max="100" step="1" value="0">
-            <span class="debug-val" id="adjTintVal">+0</span>
-          </div>
-          <div class="debug-divider"></div>
-          <div class="debug-row">
-            <span class="debug-label">Shadows</span>
-            <input type="range" class="debug-slider" id="adjShadows"     min="-100" max="100" step="1" value="0">
-            <span class="debug-val" id="adjShadowsVal">+0</span>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">Midtones</span>
-            <input type="range" class="debug-slider" id="adjMidtones"    min="-100" max="100" step="1" value="0">
-            <span class="debug-val" id="adjMidtonesVal">+0</span>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">Highlights</span>
-            <input type="range" class="debug-slider" id="adjHighlights"  min="-100" max="100" step="1" value="0">
-            <span class="debug-val" id="adjHighlightsVal">+0</span>
-          </div>
-          <button class="debug-reset btn btn-ghost btn-sm" id="adjReset">Reset all</button>
-        </div>
 
-        <!-- Environment preset bar (floating top-right, 3D only) -->
-        <div class="env-bar" id="envBar" style="display:none;">
-          <button class="env-btn active" data-env="livingRoom">Living Room</button>
-          <button class="env-btn" data-env="gallery">Gallery</button>
-          <button class="env-btn" data-env="outdoor">Outdoor</button>
-          <button class="env-btn" data-env="night">Night</button>
-          <div class="env-sep"></div>
-          <label class="env-btn env-ibl-btn" title="Load equirectangular IBL image (JPEG, PNG, HDR)">
-            Load IBL
-            <input type="file" id="iblFileInput" accept="image/*,.hdr" style="display:none;">
-          </label>
-          <span class="env-btn" id="iblFileName" style="cursor:default;opacity:0.6;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">RoomEnvironment</span>
-        </div>
-
-      </div><!-- /view-area -->
-    </div><!-- /viewport -->
-
-    <!-- ── RIGHT SIDEBAR ─────────────────────────────────────── -->
-    <div class="sidebar">
-      <div class="sidebar-top">
-
-        <!-- Preset picker -->
-        <div class="sidebar-section">
-          <div class="preset-btn-wrap">
-            <button class="btn btn-secondary btn-full" id="presetBtn">Choose Preset</button>
-            <div class="preset-dropdown hidden" id="presetDropdown"></div>
+          <!-- Crop toolbar — always shown in image view when image selected -->
+          <div class="crop-toolbar" id="cropToolbar" style="display:none;">
+            <span class="crop-toolbar-label" id="cropRatioLabel">5:3</span>
+            <button class="btn btn-secondary btn-sm" id="btnEditCrop">Edit Crop</button>
+            <button class="btn btn-primary btn-sm" id="btnApplyCrop" style="display:none;">Apply</button>
+            <button class="btn btn-ghost btn-sm" id="btnAutoFit">Auto-Fit</button>
+            <button class="btn btn-ghost btn-sm" id="btnResetCrop">Reset</button>
+            <button class="btn btn-ghost btn-sm" id="btnCancelCrop" style="display:none;">Cancel</button>
           </div>
-        </div>
 
-        <!-- Resolution + Aspect -->
-        <div class="sidebar-section">
+          <!-- Crop size info -->
+          <div class="crop-size-info" id="cropSizeInfo" style="display:none;"></div>
+
+          <!-- 3D controls overlay (floating bottom) -->
+          <div class="controls-3d" id="controls3d" style="display:none;">
+            <div class="controls-left">
+              <button class="btn btn-secondary btn-sm active" id="btnZoom">Zoom</button>
+              <button class="btn btn-secondary btn-sm active" id="btnOrbit">Orbit</button>
+              <button class="btn btn-secondary btn-sm" id="btnReset">Reset</button>
+            </div>
+          </div>
+
+          <!-- IBL picker (floating top-right, 3D only) -->
+          <div class="ibl-picker" id="iblPicker" style="display:none;">
+            <div class="ibl-picker-header" id="iblPickerBtn">
+              <img class="ibl-picker-thumb" id="iblPickerThumb" src="./IBL/IBL_01.jpg" alt="">
+              <span class="ibl-picker-label" id="iblPickerLabel">IBL 01</span>
+              <span class="ibl-picker-arrow">▼</span>
+            </div>
+            <div class="ibl-picker-dropdown hidden" id="iblPickerDropdown">
+              <div class="ibl-option" data-path="./IBL/IBL_01.jpg" data-label="IBL 01">
+                <img src="./IBL/IBL_01.jpg" alt="IBL 01">
+                <span>IBL 01</span>
+              </div>
+              <div class="ibl-option" data-path="./IBL/IBL_02.jpg" data-label="IBL 02">
+                <img src="./IBL/IBL_02.jpg" alt="IBL 02">
+                <span>IBL 02</span>
+              </div>
+              <div class="ibl-option" data-path="./IBL/IBL_03.jpg" data-label="IBL 03">
+                <img src="./IBL/IBL_03.jpg" alt="IBL 03">
+                <span>IBL 03</span>
+              </div>
+              <div class="ibl-option" data-path="./IBL/IBL_04.jpg" data-label="IBL 04">
+                <img src="./IBL/IBL_04.jpg" alt="IBL 04">
+                <span>IBL 04</span>
+              </div>
+            </div>
+            <div class="ibl-slider-row">
+              <span class="ibl-slider-label">IBL</span>
+              <input type="range" id="iblSlider" min="0" max="3" step="0.05" value="1">
+              <span class="ibl-slider-val" id="iblLabel">1.0×</span>
+            </div>
+          </div>
+
+        </div><!-- /view-area -->
+      </div><!-- /viewport -->
+
+      <!-- ── RIGHT SIDEBAR ─────────────────────────────────────── -->
+      <div class="sidebar">
+        <div class="sidebar-top">
+
+          <!-- Preset picker -->
+          <div class="sidebar-section">
+            <div class="preset-btn-wrap">
+              <button class="btn btn-secondary btn-full" id="presetBtn">Choose Preset</button>
+              <div class="preset-dropdown hidden" id="presetDropdown"></div>
+            </div>
+          </div>
+
+          <!-- Resolution + Aspect -->
+          <div class="sidebar-section">
+            <div class="field-row">
+              <span class="field-label">Resolution</span>
+              <div class="input-pair">
+                <input type="number" id="resW" value="800" min="1" max="9999">
+                <span>×</span>
+                <input type="number" id="resH" value="480" min="1" max="9999">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Aspect</span>
+              <div class="input-pair">
+                <input type="number" id="aspW" value="5" min="1" readonly tabindex="-1"
+                  style="opacity:0.6;cursor:default;">
+                <span>×</span>
+                <input type="number" id="aspH" value="3" min="1" readonly tabindex="-1"
+                  style="opacity:0.6;cursor:default;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel toggles with inline sub-panels -->
+          <div class="sidebar-section panel-toggles">
+
+            <button class="panel-toggle" id="togglePalette" data-panel="palette">
+              Color Palette
+              <span class="toggle-arrow">▼</span>
+            </button>
+            <div class="sub-panel-content hidden" id="palettePanel">
+              <label class="field">
+                <span class="field-name">Palette</span>
+                <select id="palette"><!-- populated from palettes.json --></select>
+              </label>
+              <div id="customPaletteWrap" class="hidden conditional">
+                <label class="field">
+                  <span class="field-name">Custom colors (hex, comma-separated)</span>
+                  <input type="text" id="customPalette" placeholder="#000,#fff,#f00">
+                </label>
+              </div>
+              <div class="palette-swatch" id="paletteSwatch"></div>
+            </div>
+
+            <button class="panel-toggle" id="toggleDithering" data-panel="dithering">
+              Dithering type
+              <span class="toggle-arrow">▼</span>
+            </button>
+            <div class="sub-panel-content hidden" id="ditheringPanel">
+              <label class="field">
+                <span class="field-name">Type</span>
+                <select id="ditheringType">
+                  <option value="errorDiffusion">Error Diffusion</option>
+                  <option value="ordered">Ordered</option>
+                  <option value="random">Random</option>
+                  <option value="quantizationOnly">Quantization Only</option>
+                </select>
+              </label>
+              <div id="edSection" class="conditional">
+                <label class="field">
+                  <span class="field-name">Error diffusion matrix</span>
+                  <select id="edMatrix">
+                    <option value="floydSteinberg">Floyd-Steinberg</option>
+                    <option value="atkinson">Atkinson</option>
+                    <option value="falseFloydSteinberg">False Floyd-Steinberg</option>
+                    <option value="jarvis">Jarvis</option>
+                    <option value="stucki">Stucki</option>
+                    <option value="burkes">Burkes</option>
+                    <option value="sierra3">Sierra-3</option>
+                    <option value="sierra2">Sierra-2</option>
+                    <option value="sierra2_4a">Sierra-2-4A</option>
+                  </select>
+                </label>
+                <label class="field" style="margin-top:6px;">
+                  <span class="field-name">Serpentine scanning</span>
+                  <select id="serpentine">
+                    <option value="false">Off</option>
+                    <option value="true">On</option>
+                  </select>
+                </label>
+              </div>
+              <div id="orderedSection" class="conditional hidden">
+                <div class="row-2">
+                  <label class="field"><span class="field-name">Matrix W</span><input type="number" id="orderedW"
+                      value="4" min="2" max="8"></label>
+                  <label class="field"><span class="field-name">Matrix H</span><input type="number" id="orderedH"
+                      value="4" min="2" max="8"></label>
+                </div>
+              </div>
+              <div id="randomSection" class="conditional hidden">
+                <label class="field">
+                  <span class="field-name">Random type</span>
+                  <select id="randomType">
+                    <option value="bw">Black &amp; White</option>
+                    <option value="rgb">RGB</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /sidebar-top -->
+
+        <hr class="sidebar-divider">
+
+        <!-- Bottom actions -->
+        <div class="sidebar-bottom">
+          <div id="statsText" style="font-size:11px;color:var(--text-dim);text-align:center;min-height:16px;"></div>
           <div class="field-row">
-            <span class="field-label">Resolution</span>
-            <div class="input-pair">
-              <input type="number" id="resW" value="800" min="1" max="9999">
-              <span>×</span>
-              <input type="number" id="resH" value="480" min="1" max="9999">
-            </div>
+            <span class="field-label">Start #</span>
+            <input type="number" id="exportStartNum" value="1" min="0" style="width:80px;">
           </div>
-          <div class="field-row">
-            <span class="field-label">Aspect</span>
-            <div class="input-pair">
-              <input type="number" id="aspW" value="5" min="1" readonly tabindex="-1" style="opacity:0.6;cursor:default;">
-              <span>×</span>
-              <input type="number" id="aspH" value="3" min="1" readonly tabindex="-1" style="opacity:0.6;cursor:default;">
-            </div>
+          <button class="btn btn-secondary btn-full" id="importBtn">Import Images</button>
+          <div class="export-btn-row">
+            <button class="btn btn-secondary" id="exportFilesBtn" disabled
+              title="Chrome/Edge: saves to a folder you pick. Other browsers: downloads each file individually.">Export
+              Files</button>
+            <button class="btn btn-primary" id="exportZipBtn" disabled
+              title="Downloads all images as a single ZIP file. Works in all browsers.">Export ZIP</button>
           </div>
+          <button class="btn btn-ghost btn-full" id="exportCurrentBtn" disabled
+            title="Export only the selected image using its original filename.">Export Current Image</button>
+          <input type="file" id="fileInputHidden" accept="image/*" multiple style="display:none;">
         </div>
 
-        <!-- Panel toggle buttons -->
-        <div class="sidebar-section panel-toggles">
-          <button class="panel-toggle" id="togglePalette" data-panel="palette">
-            Color Palette
-            <span class="toggle-arrow">▼</span>
-          </button>
-          <button class="panel-toggle" id="toggleDithering" data-panel="dithering">
-            Dithering type
-            <span class="toggle-arrow">▼</span>
-          </button>
-        </div>
+      </div><!-- /sidebar -->
+    </div><!-- /main-area -->
 
-      </div><!-- /sidebar-top -->
-
-      <hr class="sidebar-divider">
-
-      <!-- Sub-settings panel (expandable) -->
-      <div class="sub-panel" id="subPanel">
-
-        <!-- Empty hint -->
-        <div class="sub-panel-empty" id="subPanelEmpty">
-          <div class="sub-panel-empty-icon">⚙</div>
-          Select Color Palette or Dithering type above
-        </div>
-
-        <!-- Palette sub-panel -->
-        <div class="sub-panel-content hidden" id="palettePanel">
-          <label class="field">
-            <span class="field-name">Palette</span>
-            <select id="palette">
-              <option value="default">Default (B&amp;W)</option>
-              <option value="spectra6" selected>Spectra 6</option>
-              <option value="gallery">Gallery / AcEP 7c</option>
-              <option value="custom">Custom…</option>
-            </select>
-          </label>
-          <div id="customPaletteWrap" class="hidden conditional">
-            <label class="field">
-              <span class="field-name">Custom colors (hex, comma-separated)</span>
-              <input type="text" id="customPalette" placeholder="#000,#fff,#f00">
-            </label>
-          </div>
-          <div class="palette-swatch" id="paletteSwatch"></div>
-          <label class="field">
-            <span class="field-name">Export colors (sent to firmware)</span>
-            <select id="deviceColors">
-              <option value="default">Default (B&amp;W)</option>
-              <option value="spectra6" selected>Spectra 6</option>
-              <option value="acep">AcEP 7c</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Dithering sub-panel -->
-        <div class="sub-panel-content hidden" id="ditheringPanel">
-          <label class="field">
-            <span class="field-name">Type</span>
-            <select id="ditheringType">
-              <option value="errorDiffusion">Error Diffusion</option>
-              <option value="ordered">Ordered</option>
-              <option value="random">Random</option>
-              <option value="quantizationOnly">Quantization Only</option>
-            </select>
-          </label>
-
-          <div id="edSection" class="conditional">
-            <label class="field">
-              <span class="field-name">Error diffusion matrix</span>
-              <select id="edMatrix">
-                <option value="floydSteinberg">Floyd-Steinberg</option>
-                <option value="atkinson">Atkinson</option>
-                <option value="falseFloydSteinberg">False Floyd-Steinberg</option>
-                <option value="jarvis">Jarvis</option>
-                <option value="stucki">Stucki</option>
-                <option value="burkes">Burkes</option>
-                <option value="sierra3">Sierra-3</option>
-                <option value="sierra2">Sierra-2</option>
-                <option value="sierra2_4a">Sierra-2-4A</option>
-              </select>
-            </label>
-            <label class="field" style="margin-top:6px;">
-              <span class="field-name">Serpentine scanning</span>
-              <select id="serpentine">
-                <option value="false">Off</option>
-                <option value="true">On</option>
-              </select>
-            </label>
-          </div>
-
-          <div id="orderedSection" class="conditional hidden">
-            <div class="row-2">
-              <label class="field"><span class="field-name">Matrix W</span><input type="number" id="orderedW" value="4" min="2" max="8"></label>
-              <label class="field"><span class="field-name">Matrix H</span><input type="number" id="orderedH" value="4" min="2" max="8"></label>
-            </div>
-          </div>
-
-          <div id="randomSection" class="conditional hidden">
-            <label class="field">
-              <span class="field-name">Random type</span>
-              <select id="randomType">
-                <option value="bw">Black &amp; White</option>
-                <option value="rgb">RGB</option>
-              </select>
-            </label>
-          </div>
-
-          <label class="field" style="margin-top:4px;">
-            <span class="field-name">Filename suffix</span>
-            <input type="text" id="suffix" value="_epd">
-          </label>
-        </div>
-
-      </div><!-- /sub-panel -->
-
-      <hr class="sidebar-divider">
-
-      <!-- Bottom actions -->
-      <div class="sidebar-bottom">
-        <div id="statsText" style="font-size:11px;color:var(--text-dim);text-align:center;min-height:16px;"></div>
-        <button class="btn btn-secondary btn-full" id="importBtn">Import Images</button>
-        <button class="btn btn-primary btn-full" id="exportBtn" disabled>Export Images</button>
-        <input type="file" id="fileInputHidden" accept="image/*" multiple style="display:none;">
+    <!-- ── FILMSTRIP ─────────────────────────────────────────── -->
+    <div class="filmstrip" id="filmstrip">
+      <div class="film-add" id="filmAdd">
+        <span>+</span>
+        <span class="film-add-label">Add</span>
       </div>
-
-    </div><!-- /sidebar -->
-  </div><!-- /main-area -->
-
-  <!-- ── FILMSTRIP ─────────────────────────────────────────── -->
-  <div class="filmstrip" id="filmstrip">
-    <div class="film-add" id="filmAdd">
-      <span>+</span>
-      <span class="film-add-label">Add</span>
     </div>
-  </div>
 
-</div><!-- /app -->
+  </div><!-- /app -->
 
-<div class="toast-container" id="toastContainer"></div>
+  <div class="toast-container" id="toastContainer"></div>
 
-<script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

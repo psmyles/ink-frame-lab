@@ -219,30 +219,20 @@ body {
   z-index: 10;
 }
 
-/* ─── 3D CONTROLS OVERLAY (floating bottom) ─────────── */
+/* ─── 3D CONTROLS OVERLAY (floating bottom-left) ────── */
 .controls-3d {
   position: absolute;
   bottom: 14px;
   left: 14px;
-  right: 14px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 6px;
   z-index: 20;
   pointer-events: none;
 }
 
 .controls-3d > * { pointer-events: auto; }
-
-.controls-left {
-  display: flex;
-  gap: 6px;
-  align-self: flex-start;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-}
+.controls-left { display: flex; gap: 6px; }
 
 .controls-center {
   display: flex;
@@ -322,6 +312,123 @@ input[type="range"]::-moz-range-thumb {
 
 .env-btn:hover { color: var(--text); background: var(--surface2); }
 .env-btn.active { background: var(--surface3); color: var(--text-bright); }
+
+/* ─── IBL PICKER (floating top-right, 3D view) ──────── */
+.ibl-picker {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(14,15,17,0.92);
+  border: 1px solid var(--border-active);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  overflow: visible;
+  min-width: 180px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+.ibl-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: background 0.15s;
+}
+.ibl-picker-header:hover { background: rgba(255,255,255,0.05); }
+
+.ibl-picker-thumb {
+  width: 40px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.ibl-picker-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.ibl-picker-arrow {
+  font-size: 9px;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+
+.ibl-picker.open .ibl-picker-arrow { transform: rotate(180deg); }
+
+.ibl-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: rgba(14,15,17,0.97);
+  border: 1px solid var(--border-active);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  min-width: 200px;
+}
+
+.ibl-picker-dropdown.hidden { display: none; }
+
+.ibl-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.ibl-option:last-child { border-bottom: none; }
+.ibl-option:hover { background: var(--surface2); }
+.ibl-option.active { background: rgba(232,213,163,0.08); }
+
+.ibl-option img {
+  width: 64px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.ibl-option span {
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.ibl-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.ibl-slider-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.ibl-slider-val {
+  font-size: 11px;
+  color: var(--text);
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
 
 /* ─── DEBUG ADJUSTMENTS PANEL ───────────────────────── */
 .debug-panel {
@@ -417,7 +524,9 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sidebar-section {
@@ -541,44 +650,17 @@ input[type="range"]::-moz-range-thumb {
 
 .panel-toggle.active .toggle-arrow { transform: rotate(180deg); color: var(--accent); }
 
-/* Sub-settings panel */
-.sub-panel {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sub-panel::-webkit-scrollbar { width: 4px; }
-.sub-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
+/* Inline sub-panels (appear directly under their toggle button) */
 .sub-panel-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 10px 0 6px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
 }
 
 .sub-panel-content.hidden { display: none; }
-
-.sub-panel-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  color: var(--text-dim);
-  font-size: 11px;
-  opacity: 0.5;
-  text-align: center;
-  gap: 8px;
-  padding: 20px;
-  letter-spacing: 0.04em;
-}
-
-.sub-panel-empty-icon { font-size: 28px; opacity: 0.4; }
 
 /* Sidebar bottom actions */
 .sidebar-bottom {
@@ -796,6 +878,13 @@ select option { background: #1e2023; }
 }
 
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ─── EXPORT BUTTON ROW ─────────────────────────────── */
+.export-btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
 
 /* ─── SCROLLBAR ──────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

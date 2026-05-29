@@ -1,17 +1,18 @@
 import { state, createItem, getSelected } from './state.js';
-import { initSidebar, updatePaletteSwatch } from './sidebar.js';
+import { loadPalettes } from './dithering.js';
+import { initSidebar, buildPaletteSelect } from './sidebar.js';
 import {
-  renderFilmstrip, refreshFilmItem, selectItem, showDropZone,
+  renderFilmstrip, selectItem, showDropZone,
   updateUIState, updateStats, loadSourceImage,
-  enterCropMode, cancelCrop, applyCrop, resetCrop, autoFitCrop,
-  toast, isCropMode,
+  startCropEdit, applyAndExitCropEdit, cancelCropEdit, doAutoFit, doResetCrop,
+  renderPreview, renderFirmwareView, toast, setOnSelectCallback,
 } from './ui.js';
-import { downloadAll } from './export.js';
+import { downloadFiles, downloadZip, downloadCurrent, ensureProcessed } from './export.js';
 import {
-  initViewer3d, applyEnvPreset,
+  initViewer3d,
   resetCamera, toggleZoom, toggleOrbit,
-  resizeViewer, onEnter3dView, rebuildFrame, setGlassVisible, isReady,
-  loadIBLFromFile, setIBLIntensity, setDisplayAdjustment,
+  resizeViewer, onEnter3dView, rebuildFrame, isReady,
+  loadIBLByPath, setIBLIntensity,
 } from './viewer3d.js';
 
 // ─── QUEUE MANAGEMENT ────────────────────────────────────────
@@ -28,57 +29,54 @@ function addFiles(files) {
   renderFilmstrip();
   updateStats();
   updateUIState();
-  if (!state.selectedId && state.queue.length > 0) {
-    selectItem(state.queue[0].id);
-  }
+  if (!state.selectedId && state.queue.length > 0) selectItem(state.queue[0].id);
 }
 
 // ─── VIEW TAB SWITCHING ───────────────────────────────────────
 async function switchTab(tab) {
-  if (isCropMode()) cancelCrop();
   state.viewTab = tab;
 
   document.querySelectorAll('.view-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
 
-  const canvas2d = document.getElementById('canvas2d');
-  const canvas3d = document.getElementById('canvas3d');
+  const canvas2d       = document.getElementById('canvas2d');
+  const canvasFirmware = document.getElementById('canvasFirmware');
+  const canvas3d       = document.getElementById('canvas3d');
+
+  canvas2d.style.display       = tab === 'image'    ? 'block' : 'none';
+  canvasFirmware.style.display = tab === 'firmware' ? 'block' : 'none';
+  canvas3d.style.display       = tab === '3d'       ? 'block' : 'none';
+
+  updateUIState();
 
   if (tab === 'image') {
-    canvas2d.style.display = 'block';
-    canvas3d.style.display = 'none';
-    updateUIState();
-    // Re-render 2D view
-    const { renderPreview } = await import('./ui.js');
     renderPreview();
+  } else if (tab === 'firmware') {
+    const item = getSelected();
+    if (item && item.status !== 'done') await ensureProcessed(item);
+    renderFirmwareView();
   } else {
-    canvas2d.style.display = 'none';
-    canvas3d.style.display = 'block';
-    updateUIState();
-    if (!isReady()) {
-      initViewer3d(canvas3d);
-    }
+    if (!isReady()) initViewer3d(canvas3d);
     await onEnter3dView();
   }
 }
 
-// ─── RESOLUTION CHANGE → REBUILD FRAME ───────────────────────
+// ─── RESOLUTION CHANGE ───────────────────────────────────────
 function onResolutionChange() {
   if (isReady() && state.viewTab === '3d') rebuildFrame();
 }
 
 // ─── DRAG & DROP ─────────────────────────────────────────────
 function initDragDrop() {
-  const body = document.body;
-  body.addEventListener('dragover', e => {
+  document.body.addEventListener('dragover', e => {
     e.preventDefault();
     document.getElementById('dropBox').classList.add('dragover');
   });
-  body.addEventListener('dragleave', e => {
+  document.body.addEventListener('dragleave', e => {
     if (!e.relatedTarget) document.getElementById('dropBox').classList.remove('dragover');
   });
-  body.addEventListener('drop', e => {
+  document.body.addEventListener('drop', e => {
     e.preventDefault();
     document.getElementById('dropBox').classList.remove('dragover');
     addFiles(e.dataTransfer.files);
@@ -88,23 +86,76 @@ function initDragDrop() {
 // ─── RESIZE OBSERVER ─────────────────────────────────────────
 function initResizeObserver() {
   const area = document.getElementById('viewArea');
-  const ro = new ResizeObserver(() => {
-    if (state.viewTab === '3d' && isReady()) {
-      resizeViewer(area.clientWidth, area.clientHeight);
-    }
-    if (state.viewTab === 'image' && state.selectedId) {
-      import('./ui.js').then(m => m.renderPreview());
-    }
+  new ResizeObserver(() => {
+    if (state.viewTab === '3d' && isReady()) resizeViewer(area.clientWidth, area.clientHeight);
+    if (state.viewTab === 'image' && state.selectedId) renderPreview();
+    if (state.viewTab === 'firmware' && state.selectedId) renderFirmwareView();
+  }).observe(area);
+}
+
+// ─── IBL PICKER ──────────────────────────────────────────────
+function initIBLPicker() {
+  const btn      = document.getElementById('iblPickerBtn');
+  const dropdown = document.getElementById('iblPickerDropdown');
+  const picker   = document.getElementById('iblPicker');
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+    picker.classList.toggle('open');
   });
-  ro.observe(area);
+
+  document.addEventListener('click', () => {
+    dropdown.classList.add('hidden');
+    picker.classList.remove('open');
+  });
+
+  document.querySelectorAll('.ibl-option').forEach(opt => {
+    opt.addEventListener('click', async () => {
+      const path  = opt.dataset.path;
+      const label = opt.dataset.label;
+      if (isReady()) await loadIBLByPath(path);
+      document.getElementById('iblPickerThumb').src = path;
+      document.getElementById('iblPickerLabel').textContent = label;
+      document.querySelectorAll('.ibl-option').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      dropdown.classList.add('hidden');
+      picker.classList.remove('open');
+    });
+  });
+
+  // IBL intensity slider
+  const iblSlider = document.getElementById('iblSlider');
+  iblSlider.addEventListener('input', () => {
+    if (isReady()) setIBLIntensity(parseFloat(iblSlider.value));
+  });
+}
+
+// ─── SETTINGS CHANGE → RE-PROCESS ACTIVE VIEW ────────────────
+async function onSettingsChange() {
+  const item = getSelected();
+  if (!item || item.status === 'processing') return;
+  // Invalidate so re-processing uses new settings
+  item.status = 'pending';
+  item.ditheredCanvas = null;
+  item.deviceCanvas = null;
+  const { refreshFilmItem, updateStats } = await import('./ui.js');
+  refreshFilmItem(item);
+  updateStats();
+
+  if (state.viewTab === 'firmware') {
+    await ensureProcessed(item);
+    renderFirmwareView();
+  } else if (state.viewTab === '3d' && isReady()) {
+    await ensureProcessed(item);
+    onEnter3dView();
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
 function init() {
-  // Sidebar
   initSidebar();
 
-  // Wire resolution changes to frame rebuild
   document.getElementById('resW').addEventListener('change', onResolutionChange);
   document.getElementById('resH').addEventListener('change', onResolutionChange);
 
@@ -114,79 +165,48 @@ function init() {
   });
 
   // File inputs
-  const fileInput = document.getElementById('fileInput');
+  const fileInput       = document.getElementById('fileInput');
   const fileInputHidden = document.getElementById('fileInputHidden');
-  fileInput.addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+  fileInput.addEventListener('change',       e => { addFiles(e.target.files); e.target.value = ''; });
   fileInputHidden.addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+  document.getElementById('filmAdd').addEventListener('click',     () => fileInputHidden.click());
+  document.getElementById('importBtn').addEventListener('click',    () => fileInputHidden.click());
+  document.getElementById('exportFilesBtn').addEventListener('click',   downloadFiles);
+  document.getElementById('exportZipBtn').addEventListener('click',     downloadZip);
+  document.getElementById('exportCurrentBtn').addEventListener('click', downloadCurrent);
 
-  document.getElementById('filmAdd').addEventListener('click', () => fileInputHidden.click());
-  document.getElementById('importBtn').addEventListener('click', () => fileInputHidden.click());
-  document.getElementById('exportBtn').addEventListener('click', downloadAll);
-
-  // Crop controls
-  document.getElementById('btnCrop').addEventListener('click', enterCropMode);
-  document.getElementById('btnAutoFit').addEventListener('click', () => autoFitCrop());
-  document.getElementById('btnCancelCrop').addEventListener('click', cancelCrop);
-  document.getElementById('btnApplyCrop').addEventListener('click', applyCrop);
-  document.getElementById('resetCropBtn').addEventListener('click', resetCrop);
+  // Crop toolbar
+  document.getElementById('btnEditCrop').addEventListener('click',  startCropEdit);
+  document.getElementById('btnApplyCrop').addEventListener('click', applyAndExitCropEdit);
+  document.getElementById('btnCancelCrop').addEventListener('click', cancelCropEdit);
+  document.getElementById('btnAutoFit').addEventListener('click',   doAutoFit);
+  document.getElementById('btnResetCrop').addEventListener('click', doResetCrop);
 
   // 3D controls
-  document.getElementById('btnZoom').addEventListener('click', toggleZoom);
+  document.getElementById('btnZoom').addEventListener('click',  toggleZoom);
   document.getElementById('btnOrbit').addEventListener('click', toggleOrbit);
   document.getElementById('btnReset').addEventListener('click', resetCamera);
 
-  // IBL intensity slider
-  const iblSlider = document.getElementById('iblSlider');
-  iblSlider.addEventListener('input', () => {
-    if (isReady()) setIBLIntensity(parseFloat(iblSlider.value));
-  });
-
-  // Debug display adjustments
-  const adjDefs = [
-    { id: 'adjExposure',    key: 'exposure',    fmt: v => v.toFixed(2) },
-    { id: 'adjContrast',    key: 'contrast',    fmt: v => v.toFixed(2) },
-    { id: 'adjSaturation',  key: 'saturation',  fmt: v => v.toFixed(2) },
-    { id: 'adjTemperature', key: 'temperature', fmt: v => (v >= 0 ? '+' : '') + v },
-    { id: 'adjTint',        key: 'tint',        fmt: v => (v >= 0 ? '+' : '') + v },
-    { id: 'adjShadows',     key: 'shadows',     fmt: v => (v >= 0 ? '+' : '') + v },
-    { id: 'adjMidtones',    key: 'midtones',    fmt: v => (v >= 0 ? '+' : '') + v },
-    { id: 'adjHighlights',  key: 'highlights',  fmt: v => (v >= 0 ? '+' : '') + v },
-  ];
-  for (const { id, key, fmt } of adjDefs) {
-    const slider = document.getElementById(id);
-    const valEl  = document.getElementById(id + 'Val');
-    slider.addEventListener('input', () => {
-      const v = parseFloat(slider.value);
-      valEl.textContent = fmt(v);
-      if (isReady()) setDisplayAdjustment(key, v);
-    });
-  }
-  document.getElementById('adjReset').addEventListener('click', () => {
-    const defaults = { adjExposure: 0.89, adjContrast: 0.91, adjSaturation: 1.00, adjTemperature: 2, adjTint: 0, adjShadows: 0, adjMidtones: 0, adjHighlights: 0 };
-    for (const { id, key, fmt } of adjDefs) {
-      const slider = document.getElementById(id);
-      slider.value = defaults[id];
-      document.getElementById(id + 'Val').textContent = fmt(defaults[id]);
-      if (isReady()) setDisplayAdjustment(key, defaults[id]);
+  // Keep active view in sync when filmstrip selection changes
+  setOnSelectCallback(async (id) => {
+    if (state.viewTab === 'firmware') {
+      const item = state.queue.find(q => q.id === id);
+      if (item && item.status !== 'done') await ensureProcessed(item);
+      renderFirmwareView();
+    } else if (state.viewTab === '3d' && isReady()) {
+      await onEnter3dView();
     }
   });
 
-  // IBL file loader
-  const iblFileInput = document.getElementById('iblFileInput');
-  document.querySelector('.env-ibl-btn').addEventListener('click', () => iblFileInput.click());
-  iblFileInput.addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if (file && isReady()) await loadIBLFromFile(file);
-    e.target.value = '';
-  });
+  // Re-process active view when palette or dithering settings change
+  const settingsIds = ['palette','ditheringType','edMatrix','serpentine',
+                       'orderedW','orderedH','randomType','customPalette'];
+  for (const id of settingsIds) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', onSettingsChange);
+  }
 
-  // Environment preset buttons
-  document.querySelectorAll('.env-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (isReady()) applyEnvPreset(btn.dataset.env);
-    });
-  });
-
+  initIBLPicker();
   initDragDrop();
   initResizeObserver();
   showDropZone(true);
@@ -194,4 +214,8 @@ function init() {
   updateStats();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', async () => {
+  const paletteData = await loadPalettes();
+  buildPaletteSelect(paletteData);
+  init();
+});

@@ -2,58 +2,77 @@ import { PALETTES, DEVICE_COLORS } from './dithering.js';
 import { state } from './state.js';
 
 const PRESETS = [
-  { label: 'Waveshare 7.5"',         w: 800, h: 480 },
-  { label: 'Waveshare 5.83"',        w: 648, h: 480 },
-  { label: 'Pimoroni Inky 7.3"',     w: 800, h: 480 },
-  { label: 'Pimoroni Inky 5.7"',     w: 600, h: 448 },
-  { label: 'Pimoroni Inky 4"',       w: 640, h: 400 },
+  { label: 'Waveshare 7.5"',     w: 800, h: 480 },
+  { label: 'Waveshare 5.83"',    w: 648, h: 480 },
+  { label: 'Pimoroni Inky 7.3"', w: 800, h: 480 },
+  { label: 'Pimoroni Inky 5.7"', w: 600, h: 448 },
+  { label: 'Pimoroni Inky 4"',   w: 640, h: 400 },
 ];
 
-let activePanel = null;  // 'palette' | 'dithering' | null
+let activePanel = null;
 
 export function getOptions() {
   const paletteKey = document.getElementById('palette').value;
-  let palette = PALETTES[paletteKey] || PALETTES.spectra6;
+  let palette      = PALETTES[paletteKey] || Object.values(PALETTES)[0];
+  let deviceColors = DEVICE_COLORS[paletteKey] || Object.values(DEVICE_COLORS)[0];
+
   if (paletteKey === 'custom') {
     const hexes = document.getElementById('customPalette').value
       .split(',').map(s => s.trim()).filter(s => /^#[0-9a-fA-F]{3,6}$/.test(s));
     if (hexes.length > 0) {
-      palette = { name: 'Custom', colors: hexes.map(hexToRgb), hexColors: hexes };
+      palette      = { name: 'Custom', colors: hexes.map(hexToRgb), hexColors: hexes };
+      deviceColors = palette; // custom: no firmware remapping
     }
   }
+
   return {
     palette,
-    deviceColors: DEVICE_COLORS[document.getElementById('deviceColors').value] || DEVICE_COLORS.spectra6,
+    deviceColors,
     ditheringType: document.getElementById('ditheringType').value,
-    edMatrix: document.getElementById('edMatrix').value,
-    serpentine: document.getElementById('serpentine').value === 'true',
-    orderedW: parseInt(document.getElementById('orderedW').value) || 4,
-    orderedH: parseInt(document.getElementById('orderedH').value) || 4,
-    randomType: document.getElementById('randomType').value,
-    suffix: document.getElementById('suffix').value || '_epd',
+    edMatrix:      document.getElementById('edMatrix').value,
+    serpentine:    document.getElementById('serpentine').value === 'true',
+    orderedW:      parseInt(document.getElementById('orderedW').value) || 4,
+    orderedH:      parseInt(document.getElementById('orderedH').value) || 4,
+    randomType:    document.getElementById('randomType').value,
   };
 }
 
 export function updatePaletteSwatch() {
-  const key = document.getElementById('palette').value;
-  const pal = PALETTES[key];
-  const swatch = document.getElementById('paletteSwatch');
-  swatch.innerHTML = '';
+  const key  = document.getElementById('palette').value;
+  const pal  = PALETTES[key];
+  const el   = document.getElementById('paletteSwatch');
+  el.innerHTML = '';
   if (!pal) return;
   for (const hex of pal.hexColors) {
     const s = document.createElement('div');
-    s.className = 'swatch';
-    s.style.background = hex;
-    s.title = hex;
-    swatch.appendChild(s);
+    s.className = 'swatch'; s.style.background = hex; s.title = hex;
+    el.appendChild(s);
   }
+}
+
+// Called once after loadPalettes() resolves. Builds the <select> options from
+// the loaded palette data so the HTML doesn't need to be edited when palettes change.
+export function buildPaletteSelect(paletteData) {
+  const sel = document.getElementById('palette');
+  sel.innerHTML = '';
+  for (const p of paletteData) {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    if (p.id === 'spectra6') opt.selected = true;
+    sel.appendChild(opt);
+  }
+  // Always keep Custom as the last option
+  const custom = document.createElement('option');
+  custom.value = 'custom';
+  custom.textContent = 'Custom…';
+  sel.appendChild(custom);
 }
 
 export function initSidebar() {
   buildPresetDropdown();
 
-  // Preset button toggle
-  const presetBtn = document.getElementById('presetBtn');
+  const presetBtn      = document.getElementById('presetBtn');
   const presetDropdown = document.getElementById('presetDropdown');
   presetBtn.addEventListener('click', e => {
     e.stopPropagation();
@@ -61,25 +80,21 @@ export function initSidebar() {
   });
   document.addEventListener('click', () => presetDropdown.classList.add('hidden'));
 
-  // Resolution inputs → update state + aspect display
   document.getElementById('resW').addEventListener('input', syncAspectFromResolution);
   document.getElementById('resH').addEventListener('input', syncAspectFromResolution);
 
-  // Palette change
   document.getElementById('palette').addEventListener('change', e => {
     document.getElementById('customPaletteWrap').classList.toggle('hidden', e.target.value !== 'custom');
     updatePaletteSwatch();
   });
 
-  // Dithering type change
   document.getElementById('ditheringType').addEventListener('change', e => {
     const v = e.target.value;
-    document.getElementById('edSection').classList.toggle('hidden', v !== 'errorDiffusion');
+    document.getElementById('edSection').classList.toggle('hidden',      v !== 'errorDiffusion');
     document.getElementById('orderedSection').classList.toggle('hidden', v !== 'ordered');
-    document.getElementById('randomSection').classList.toggle('hidden', v !== 'random');
+    document.getElementById('randomSection').classList.toggle('hidden',  v !== 'random');
   });
 
-  // Panel toggles
   document.getElementById('togglePalette').addEventListener('click', () => {
     setActivePanel(activePanel === 'palette' ? null : 'palette');
   });
@@ -135,26 +150,15 @@ function gcd(a, b) { return b ? gcd(b, a % b) : a; }
 
 function setActivePanel(panel) {
   activePanel = panel;
-  const palettePanel = document.getElementById('palettePanel');
-  const ditheringPanel = document.getElementById('ditheringPanel');
-  const emptyHint = document.getElementById('subPanelEmpty');
-  const togglePalette = document.getElementById('togglePalette');
-  const toggleDithering = document.getElementById('toggleDithering');
-
-  togglePalette.classList.toggle('active', panel === 'palette');
-  toggleDithering.classList.toggle('active', panel === 'dithering');
-
-  palettePanel.classList.toggle('hidden', panel !== 'palette');
-  ditheringPanel.classList.toggle('hidden', panel !== 'dithering');
-  emptyHint.classList.toggle('hidden', panel !== null);
+  document.getElementById('togglePalette').classList.toggle('active',   panel === 'palette');
+  document.getElementById('toggleDithering').classList.toggle('active', panel === 'dithering');
+  document.getElementById('palettePanel').classList.toggle('hidden',    panel !== 'palette');
+  document.getElementById('ditheringPanel').classList.toggle('hidden',  panel !== 'dithering');
 }
 
 function hexToRgb(hex) {
   const full = hex.length === 4
     ? '#' + hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3]
     : hex;
-  const r = parseInt(full.slice(1,3), 16);
-  const g = parseInt(full.slice(3,5), 16);
-  const b = parseInt(full.slice(5,7), 16);
-  return [r, g, b];
+  return [parseInt(full.slice(1,3),16), parseInt(full.slice(3,5),16), parseInt(full.slice(5,7),16)];
 }

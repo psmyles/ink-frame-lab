@@ -1,44 +1,34 @@
 // Calibrated colors — what the physical display actually renders.
 // Used as the dithering palette so error diffusion works against realistic colours.
 // Each entry's index corresponds to the same index in DEVICE_COLORS (pure RGB for firmware export).
-export const PALETTES = {
-  default: {
-    name: 'Default (B&W)',
-    colors: [[0,0,0],[230,230,230]],
-    hexColors: ['#000000','#e6e6e6'],
-  },
-  spectra6: {
-    name: 'Spectra 6',
-    // Source: github.com/paperlesspaper/epdoptimize default-palettes.json
-    colors: [[31,34,38],[185,199,201],[35,63,142],[53,86,58],[98,32,30],[193,187,30]],
-    hexColors: ['#1F2226','#B9C7C9','#233F8E','#35563A','#62201E','#C1BB1E'],
-  },
-  gallery: {
-    name: 'Gallery / AcEP 7c',
-    colors: [[25,30,33],[241,241,241],[49,49,143],[83,164,40],[210,14,19],[184,94,28],[243,207,17]],
-    hexColors: ['#191E21','#F1F1F1','#31318F','#53A428','#D20E13','#B85E1C','#F3CF11'],
-  },
-};
+// Populated at startup from palettes.json via loadPalettes().
+// Each entry: { name, colors (calibrated RGB arrays), hexColors, deviceColors, deviceHexColors }
+export const PALETTES = {};
+export const DEVICE_COLORS = {};
 
-// Pure RGB values sent to the display firmware.
-// replaceColors() maps dithered calibrated pixels → these values for export.
-export const DEVICE_COLORS = {
-  default: {
-    name: 'Default (B&W)',
-    colors: [[0,0,0],[255,255,255]],
-    hexColors: ['#000000','#ffffff'],
-  },
-  spectra6: {
-    name: 'Spectra 6',
-    colors: [[0,0,0],[255,255,255],[0,0,255],[0,255,0],[255,0,0],[255,255,0]],
-    hexColors: ['#000000','#ffffff','#0000ff','#00ff00','#ff0000','#ffff00'],
-  },
-  acep: {
-    name: 'AcEP 7c',
-    colors: [[0,0,0],[255,255,255],[0,0,255],[0,255,0],[255,0,0],[255,128,0],[255,255,0]],
-    hexColors: ['#000000','#ffffff','#0000ff','#00ff00','#ff0000','#ff8000','#ffff00'],
-  },
-};
+function hexToRgbArr(hex) {
+  const h = hex.length === 4
+    ? '#' + hex[1]+hex[1]+hex[2]+hex[2]+hex[3]+hex[3]
+    : hex;
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+
+export async function loadPalettes(url = './palettes.json') {
+  const data = await fetch(url).then(r => r.json());
+  for (const p of data) {
+    PALETTES[p.id] = {
+      name: p.name,
+      colors:    p.colors.map(c => hexToRgbArr(c.color)),
+      hexColors: p.colors.map(c => c.color),
+    };
+    DEVICE_COLORS[p.id] = {
+      name: p.name,
+      colors:    p.colors.map(c => hexToRgbArr(c.deviceColor)),
+      hexColors: p.colors.map(c => c.deviceColor),
+    };
+  }
+  return data;
+}
 
 export function nearestPaletteColor(r, g, b, palette) {
   let best = 0, bestDist = Infinity;
