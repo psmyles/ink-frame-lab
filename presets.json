@@ -1,0 +1,144 @@
+{
+  "devices": [
+    {
+      "id": "reTerminal E1002 7.3",
+      "name": "reTerminal E1002 7.3\"",
+      "resolution": {
+        "w": 800,
+        "h": 480
+      },
+      "palette": "spectra6"
+    },
+    {
+      "id": "waveshare-5.83",
+      "name": "Waveshare 5.83\"",
+      "resolution": {
+        "w": 648,
+        "h": 480
+      },
+      "palette": "spectra6"
+    },
+    {
+      "id": "pimoroni-7.3",
+      "name": "Pimoroni Inky 7.3\"",
+      "resolution": {
+        "w": 800,
+        "h": 480
+      },
+      "palette": "gallery"
+    },
+    {
+      "id": "pimoroni-5.7",
+      "name": "Pimoroni Inky 5.7\"",
+      "resolution": {
+        "w": 600,
+        "h": 448
+      },
+      "palette": "gallery"
+    },
+    {
+      "id": "pimoroni-4",
+      "name": "Pimoroni Inky 4\"",
+      "resolution": {
+        "w": 640,
+        "h": 400
+      },
+      "palette": "spectra6"
+    }
+  ],
+  "palettes": [
+    {
+      "id": "default",
+      "name": "Default (B&W)",
+      "colors": [
+        {
+          "name": "black",
+          "color": "#000000",
+          "deviceColor": "#000000"
+        },
+        {
+          "name": "white",
+          "color": "#e6e6e6",
+          "deviceColor": "#ffffff"
+        }
+      ]
+    },
+    {
+      "id": "spectra6",
+      "name": "Spectra 6",
+      "colors": [
+        {
+          "name": "black",
+          "color": "#1F2226",
+          "deviceColor": "#000000"
+        },
+        {
+          "name": "white",
+          "color": "#B9C7C9",
+          "deviceColor": "#ffffff"
+        },
+        {
+          "name": "blue",
+          "color": "#233F8E",
+          "deviceColor": "#0000ff"
+        },
+        {
+          "name": "green",
+          "color": "#35563A",
+          "deviceColor": "#00ff00"
+        },
+        {
+          "name": "red",
+          "color": "#62201E",
+          "deviceColor": "#ff0000"
+        },
+        {
+          "name": "yellow",
+          "color": "#C1BB1E",
+          "deviceColor": "#ffff00"
+        }
+      ]
+    },
+    {
+      "id": "gallery",
+      "name": "Gallery / AcEP 7c",
+      "colors": [
+        {
+          "name": "black",
+          "color": "#191E21",
+          "deviceColor": "#000000"
+        },
+        {
+          "name": "white",
+          "color": "#F1F1F1",
+          "deviceColor": "#ffffff"
+        },
+        {
+          "name": "blue",
+          "color": "#31318F",
+          "deviceColor": "#0000ff"
+        },
+        {
+          "name": "green",
+          "color": "#53A428",
+          "deviceColor": "#00ff00"
+        },
+        {
+          "name": "red",
+          "color": "#D20E13",
+          "deviceColor": "#ff0000"
+        },
+        {
+          "name": "orange",
+          "color": "#B85E1C",
+          "deviceColor": "#ff8000"
+        },
+        {
+          "name": "yellow",
+          "color": "#F3CF11",
+          "deviceColor": "#ffff00"
+        }
+      ]
+    }
+  ]
+}

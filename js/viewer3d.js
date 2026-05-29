@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { state, getSelected } from './state.js';
 import { ensureProcessed, getCroppedCanvas } from './export.js';
 
@@ -15,7 +19,7 @@ const ENV_PRESETS = {
 };
 
 // ─── MODULE STATE ─────────────────────────────────────────────
-let renderer, scene, camera, controls;
+let renderer, composer, gtaoPass, scene, camera, controls;
 let frameGroup, displayMesh, glassMesh, matMesh, wallMesh;
 let displayTexture;
 let rawDisplayCanvas = null;   // unmodified canvas; kept so adj changes can re-apply
@@ -70,6 +74,34 @@ export function initViewer3d(canvas) {
 
   buildScene();
 
+  // Post-processing: GTAO ambient occlusion
+  const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  gtaoPass = new GTAOPass(scene, camera, canvas.clientWidth, canvas.clientHeight);
+  gtaoPass.output = GTAOPass.OUTPUT.Default;
+  gtaoPass.blendIntensity = 1.0;
+  gtaoPass.updateGtaoMaterial({
+    radius: 0.12,
+    distanceExponent: 1.0,
+    thickness: 1.0,
+    scale: 1.0,
+    samples: 16,
+    distanceFallOff: 1.0,
+    screenSpaceRadius: false,
+  });
+  gtaoPass.updatePdMaterial({
+    lumaPhi: 10.0,
+    depthPhi: 2.0,
+    normalPhi: 3.0,
+    radius: 4.0,
+    radiusExponent: 1.0,
+    rings: 2.0,
+    samples: 8,
+  });
+  composer.addPass(gtaoPass);
+  composer.addPass(new OutputPass());
+
   // Auto-load the first IBL image (non-blocking)
   loadIBLByPath('./IBL/IBL_01.jpg');
 
@@ -83,7 +115,7 @@ function buildScene() {
   const W      = 1.0;
   const H      = W / asp;
   const border = 0.075;
-  const depth  = 0.038;
+  const depth  = 0.065;
   const mat    = 0.052;
 
   // Frame — white/cream painted wood
@@ -112,6 +144,7 @@ function buildScene() {
 
   const backMat = new THREE.MeshStandardMaterial({
     color: 0xd8d0c4, roughness: 0.9, metalness: 0.0,
+    polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4,
   });
   const back = new THREE.Mesh(new THREE.BoxGeometry(totalW, totalH, 0.008), backMat);
   back.position.z = -depth / 2 + 0.004;
@@ -123,7 +156,7 @@ function buildScene() {
     color: 0xf8f6f2, roughness: 0.98, metalness: 0.0, envMapIntensity: 0.2,
   });
   matMesh = new THREE.Mesh(new THREE.PlaneGeometry(innerW, innerH), matMaterial);
-  matMesh.position.z = depth / 2 - 0.003;
+  matMesh.position.z = depth / 2 - 0.016;
   scene.add(matMesh);
 
   // E-ink display — MeshBasicMaterial renders the calibrated palette colours
@@ -136,7 +169,7 @@ function buildScene() {
     toneMapped: false,
   });
   displayMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), displayMat);
-  displayMesh.position.z = depth / 2 - 0.001;
+  displayMesh.position.z = depth / 2 - 0.013;
   scene.add(displayMesh);
 
   // Glass
@@ -152,7 +185,7 @@ function buildScene() {
     side: THREE.FrontSide,
   });
   glassMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), glassMat);
-  glassMesh.position.z = depth / 2 + 0.004;
+  glassMesh.position.z = depth / 2 - 0.010;
   scene.add(glassMesh);
 
   // Wall/surface behind frame
@@ -325,6 +358,8 @@ export function toggleOrbit() {
 export function resizeViewer(width, height) {
   if (!renderer) return;
   renderer.setSize(width, height, false);
+  if (composer) composer.setSize(width, height);
+  if (gtaoPass) gtaoPass.setSize(width, height);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 }
@@ -372,7 +407,7 @@ function animate() {
   if (!animating) return;
   requestAnimationFrame(animate);
   controls.update();
-  renderer.render(scene, camera);
+  composer.render();
 }
 
 export function startAnimation() { animating = true; animate(); }

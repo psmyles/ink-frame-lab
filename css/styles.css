@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
   --bg: #0e0f11;
@@ -25,7 +25,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   line-height: 1.6;
   height: 100vh;
@@ -71,7 +71,7 @@ body {
   border: none;
   border-right: 1px solid var(--border);
   color: var(--text-dim);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -297,7 +297,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .env-btn {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 10px;
   padding: 3px 9px;
   border: none;
@@ -566,7 +566,7 @@ input[type="range"]::-moz-range-thumb {
   border: none;
   border-bottom: 1px solid var(--border);
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   padding: 8px 12px;
   text-align: left;
@@ -578,7 +578,15 @@ input[type="range"]::-moz-range-thumb {
 .preset-option:last-child { border-bottom: none; }
 .preset-option:hover { background: var(--surface3); color: var(--text-bright); }
 
-/* Resolution + Aspect fields */
+.preset-info {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* Resolution field */
 .field-row {
   display: flex;
   align-items: center;
@@ -625,7 +633,7 @@ input[type="range"]::-moz-range-thumb {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text-dim);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   padding: 8px 12px;
   border-radius: var(--radius);
@@ -690,7 +698,7 @@ input[type="text"] {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   padding: 6px 8px;
   border-radius: var(--radius);
@@ -707,15 +715,17 @@ select option { background: #1e2023; }
 
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+.hidden { display: none !important; }
+
 .conditional { overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s; max-height: 300px; opacity: 1; }
-.conditional.hidden { max-height: 0; opacity: 0; pointer-events: none; }
+.conditional.hidden { max-height: 0; opacity: 0; pointer-events: none; display: unset !important; }
 
 .palette-swatch { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 
 /* ─── BUTTONS ────────────────────────────────────────── */
 .btn {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   padding: 7px 13px;
   border-radius: var(--radius);
@@ -881,8 +891,8 @@ select option { background: #1e2023; }
 
 /* ─── EXPORT BUTTON ROW ─────────────────────────────── */
 .export-btn-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 

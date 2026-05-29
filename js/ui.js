@@ -206,10 +206,12 @@ function updateCropToolbar() {
 function updateCropRatioLabel() {
   const label = document.getElementById('cropRatioLabel');
   if (!label) return;
-  const aspW = document.getElementById('aspW').value;
-  const aspH = document.getElementById('aspH').value;
-  label.textContent = `${aspW}:${aspH}`;
+  const { w, h } = state.resolution;
+  const d = gcdUi(Math.round(w), Math.round(h));
+  label.textContent = `${Math.round(w / d)}:${Math.round(h / d)}`;
 }
+
+function gcdUi(a, b) { return b ? gcdUi(b, a % b) : a; }
 
 export function updateStats() {
   const total = state.queue.length;

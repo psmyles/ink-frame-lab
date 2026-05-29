@@ -1,5 +1,5 @@
 import { state, createItem, getSelected } from './state.js';
-import { loadPalettes } from './dithering.js';
+import { loadPresets } from './dithering.js';
 import { initSidebar, buildPaletteSelect } from './sidebar.js';
 import {
   renderFilmstrip, selectItem, showDropZone,
@@ -154,8 +154,6 @@ async function onSettingsChange() {
 
 // ─── INIT ─────────────────────────────────────────────────────
 function init() {
-  initSidebar();
-
   document.getElementById('resW').addEventListener('change', onResolutionChange);
   document.getElementById('resH').addEventListener('change', onResolutionChange);
 
@@ -215,7 +213,8 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const paletteData = await loadPalettes();
-  buildPaletteSelect(paletteData);
+  const { devices, palettes } = await loadPresets();
+  buildPaletteSelect(palettes);
+  initSidebar(devices);
   init();
 });

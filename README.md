@@ -13,7 +13,7 @@ A browser-based tool for preparing images for e-ink picture frames. It dithers p
 
 ## Supported displays
 
-Resolution presets are included for common Waveshare and Pimoroni Inky displays. Any custom resolution can be entered manually.
+Resolution presets are included for common Waveshare displays. Any custom resolution can be entered manually.
 
 ## Running
 

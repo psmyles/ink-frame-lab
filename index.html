@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EPD Frame Studio</title>
+  <title>Ink Frame Lab</title>
   <link rel="stylesheet" href="css/styles.css">
   <script type="importmap">
   {
@@ -123,29 +123,16 @@
           <!-- Preset picker -->
           <div class="sidebar-section">
             <div class="preset-btn-wrap">
-              <button class="btn btn-secondary btn-full" id="presetBtn">Choose Preset</button>
+              <button class="btn btn-secondary btn-full" id="presetBtn">Select Device Preset</button>
               <div class="preset-dropdown hidden" id="presetDropdown"></div>
             </div>
-          </div>
-
-          <!-- Resolution + Aspect -->
-          <div class="sidebar-section">
-            <div class="field-row">
+            <div id="presetInfo" class="preset-info hidden"></div>
+            <div id="customResWrap" class="field-row hidden">
               <span class="field-label">Resolution</span>
               <div class="input-pair">
                 <input type="number" id="resW" value="800" min="1" max="9999">
                 <span>×</span>
                 <input type="number" id="resH" value="480" min="1" max="9999">
-              </div>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Aspect</span>
-              <div class="input-pair">
-                <input type="number" id="aspW" value="5" min="1" readonly tabindex="-1"
-                  style="opacity:0.6;cursor:default;">
-                <span>×</span>
-                <input type="number" id="aspH" value="3" min="1" readonly tabindex="-1"
-                  style="opacity:0.6;cursor:default;">
               </div>
             </div>
           </div>
@@ -242,14 +229,14 @@
           </div>
           <button class="btn btn-secondary btn-full" id="importBtn">Import Images</button>
           <div class="export-btn-row">
-            <button class="btn btn-secondary" id="exportFilesBtn" disabled
+            <button class="btn btn-secondary btn-full" id="exportFilesBtn" disabled
               title="Chrome/Edge: saves to a folder you pick. Other browsers: downloads each file individually.">Export
               Files</button>
-            <button class="btn btn-primary" id="exportZipBtn" disabled
+            <button class="btn btn-secondary btn-full" id="exportZipBtn" disabled
               title="Downloads all images as a single ZIP file. Works in all browsers.">Export ZIP</button>
+            <button class="btn btn-secondary btn-full" id="exportCurrentBtn" disabled
+              title="Export only the selected image using its original filename.">Export Current Image</button>
           </div>
-          <button class="btn btn-ghost btn-full" id="exportCurrentBtn" disabled
-            title="Export only the selected image using its original filename.">Export Current Image</button>
           <input type="file" id="fileInputHidden" accept="image/*" multiple style="display:none;">
         </div>
 

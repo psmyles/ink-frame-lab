@@ -1,15 +1,7 @@
 import { PALETTES, DEVICE_COLORS } from './dithering.js';
 import { state } from './state.js';
 
-const PRESETS = [
-  { label: 'Waveshare 7.5"',     w: 800, h: 480 },
-  { label: 'Waveshare 5.83"',    w: 648, h: 480 },
-  { label: 'Pimoroni Inky 7.3"', w: 800, h: 480 },
-  { label: 'Pimoroni Inky 5.7"', w: 600, h: 448 },
-  { label: 'Pimoroni Inky 4"',   w: 640, h: 400 },
-];
 
-let activePanel = null;
 
 export function getOptions() {
   const paletteKey = document.getElementById('palette').value;
@@ -69,8 +61,9 @@ export function buildPaletteSelect(paletteData) {
   sel.appendChild(custom);
 }
 
-export function initSidebar() {
-  buildPresetDropdown();
+export function initSidebar(devices) {
+  buildPresetDropdown(devices);
+  applyPreset(devices[0]);
 
   const presetBtn      = document.getElementById('presetBtn');
   const presetDropdown = document.getElementById('presetDropdown');
@@ -96,43 +89,53 @@ export function initSidebar() {
   });
 
   document.getElementById('togglePalette').addEventListener('click', () => {
-    setActivePanel(activePanel === 'palette' ? null : 'palette');
+    togglePanel('togglePalette', 'palettePanel');
   });
   document.getElementById('toggleDithering').addEventListener('click', () => {
-    setActivePanel(activePanel === 'dithering' ? null : 'dithering');
+    togglePanel('toggleDithering', 'ditheringPanel');
   });
 
   updatePaletteSwatch();
   syncAspectFromResolution();
 }
 
-function buildPresetDropdown() {
+function buildPresetDropdown(devices) {
   const dropdown = document.getElementById('presetDropdown');
   dropdown.innerHTML = '';
-  for (const p of PRESETS) {
+  for (const p of devices) {
     const btn = document.createElement('button');
     btn.className = 'preset-option';
-    btn.textContent = `${p.label}  ·  ${p.w}×${p.h}`;
-    btn.addEventListener('click', () => applyPreset(p.w, p.h));
+    btn.textContent = `${p.name}  ·  ${p.resolution.w}×${p.resolution.h}`;
+    btn.addEventListener('click', () => applyPreset(p));
     dropdown.appendChild(btn);
   }
   const customBtn = document.createElement('button');
   customBtn.className = 'preset-option';
   customBtn.textContent = 'Custom…';
   customBtn.addEventListener('click', () => {
-    document.getElementById('resW').focus();
     document.getElementById('presetDropdown').classList.add('hidden');
+    document.getElementById('presetInfo').classList.add('hidden');
+    document.getElementById('customResWrap').classList.remove('hidden');
+    document.getElementById('resW').focus();
   });
   dropdown.appendChild(customBtn);
 }
 
-function applyPreset(w, h) {
+function applyPreset(p) {
+  const { w, h } = p.resolution;
   document.getElementById('resW').value = w;
   document.getElementById('resH').value = h;
   document.getElementById('presetDropdown').classList.add('hidden');
+  document.getElementById('presetInfo').textContent = `${p.name}  ·  ${w} × ${h}`;
+  document.getElementById('presetInfo').classList.remove('hidden');
+  document.getElementById('customResWrap').classList.add('hidden');
   state.resolution = { w, h };
   state.aspectRatio = w / h;
-  syncAspectFromResolution();
+  if (p.palette) {
+    const sel = document.getElementById('palette');
+    sel.value = p.palette;
+    sel.dispatchEvent(new Event('change'));
+  }
 }
 
 function syncAspectFromResolution() {
@@ -141,19 +144,13 @@ function syncAspectFromResolution() {
   if (!w || !h || w <= 0 || h <= 0) return;
   state.resolution = { w: Math.round(w), h: Math.round(h) };
   state.aspectRatio = w / h;
-  const d = gcd(Math.round(w), Math.round(h));
-  document.getElementById('aspW').value = Math.round(w / d);
-  document.getElementById('aspH').value = Math.round(h / d);
 }
 
-function gcd(a, b) { return b ? gcd(b, a % b) : a; }
-
-function setActivePanel(panel) {
-  activePanel = panel;
-  document.getElementById('togglePalette').classList.toggle('active',   panel === 'palette');
-  document.getElementById('toggleDithering').classList.toggle('active', panel === 'dithering');
-  document.getElementById('palettePanel').classList.toggle('hidden',    panel !== 'palette');
-  document.getElementById('ditheringPanel').classList.toggle('hidden',  panel !== 'dithering');
+function togglePanel(btnId, panelId) {
+  const btn   = document.getElementById(btnId);
+  const panel = document.getElementById(panelId);
+  const open  = panel.classList.toggle('hidden');
+  btn.classList.toggle('active', !open);
 }
 
 function hexToRgb(hex) {

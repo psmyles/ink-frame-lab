@@ -13,9 +13,9 @@ function hexToRgbArr(hex) {
   return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
 }
 
-export async function loadPalettes(url = './palettes.json') {
+export async function loadPresets(url = './presets.json') {
   const data = await fetch(url).then(r => r.json());
-  for (const p of data) {
+  for (const p of data.palettes) {
     PALETTES[p.id] = {
       name: p.name,
       colors:    p.colors.map(c => hexToRgbArr(c.color)),
