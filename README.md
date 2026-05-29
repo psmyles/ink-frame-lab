@@ -2,6 +2,8 @@
 
 A browser-based tool for preparing images for e-ink picture frames. It dithers photos down to the limited colour palettes used by e-paper displays and exports ready-to-use PNG files for uploading. A 3D viewer is included to visualize the result in different lighting conditions at different angles.
 
+A web version can be accessed [here](https://psmyles.github.io/ink-frame-lab/).
+
 ## Features
 
 - Import one or more images via drag-and-drop or file picker
@@ -38,6 +40,13 @@ js/
   export.js       image processing and file download
   dithering.js    palette data loading and dithering algorithms
   viewer3d.js     Three.js 3D frame viewer
-palettes.json     calibrated colour palettes
+presets.json      device presets and calibrated colour palettes
 IBL/              environment maps for the 3D viewer
 ```
+
+## Credits
+
+- **[Three.js](https://threejs.org/)** - 3D rendering, used for the frame viewer, IBL lighting, and post-processing pipeline (OrbitControls, RoomEnvironment, RGBELoader, EffectComposer, GTAOPass, OutputPass). MIT License.
+- **[JSZip](https://stuk.github.io/jszip/)** - client-side ZIP archive creation for the Export ZIP feature. MIT License.
+- **[Inter](https://rsms.me/inter/)** - UI typeface by Rasmus Andersson, served via Google Fonts. SIL Open Font License.
+- **Dithering algorithms** - error diffusion kernels (Floyd-Steinberg, Atkinson, False Floyd-Steinberg, Jarvis-Judice-Ninke, Stucki, Burkes, Sierra-3, Sierra-2, Sierra-2-4A), ordered Bayer matrix, and random noise dithering are original implementations of published public-domain techniques.
