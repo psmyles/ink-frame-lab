@@ -2,7 +2,7 @@
 
 A browser-based tool for preparing images for e-ink picture frames. Start by importing images, and cropping them to the aspect ratio and resolution of your e-ink panel. Then preview the results in a 3D view in different lighting conditions at different angles. It dithers photos down to the limited colour palettes used by e-paper displays and exports ready-to-use PNG files for uploading.
 
-A web version can be accessed [here](https://psmyles.github.io/ink-frame-lab/).
+I've written a [blog post](https://psmyles.com/blog/standalone-e-ink-picture-frame) detailing the need for this tool and a related standalone firmware for displaying images on an i-ink panel.A web version can be accessed [here](https://psmyles.github.io/ink-frame-lab/).
 
 ## Workflow
 
