@@ -770,7 +770,6 @@ const char WEBPAGE_HTML[] PROGMEM = R"rawliteral(
     text-align: center; cursor: pointer; transition: all 0.2s; background: #eff6ff;
   }
   .drop-zone:hover, .drop-zone.drag-over { border-color: #2563eb; background: #dbeafe; }
-  .drop-zone .icon { font-size: 48px; margin-bottom: 8px; }
   .drop-zone p { font-size: 16px; color: #475569; }
   .drop-zone .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
   #fileInput { display: none; }
@@ -831,19 +830,22 @@ const char WEBPAGE_HTML[] PROGMEM = R"rawliteral(
 </head>
 <body>
 
-<h1>&#128247; Photo Frame Setup</h1>
+<h1>Photo Frame Setup</h1>
 <p class="subtitle">Add your photos and start the slideshow</p>
 
 <div class="info-box">
   <strong>Image requirements:</strong> PNG format, 800 x 480 pixels.
   For best results, use images already converted for the 6-colour e-ink
   palette (black, white, red, green, blue, yellow).
+  <br><br>
+  <a href="https://psmyles.github.io/ink-frame-lab/" target="_blank"
+     style="color:#1d4ed8;font-weight:500">Open Ink Frame Lab</a>
+  &mdash; a free tool to process images for this display.
 </div>
 
 <div class="card">
-  <h2>&#128228; Upload Photos</h2>
+  <h2>Upload Photos</h2>
   <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-    <div class="icon">&#128206;</div>
     <p>Tap here to choose photos</p>
     <p class="hint">or drag and drop PNG files here</p>
   </div>
@@ -853,22 +855,19 @@ const char WEBPAGE_HTML[] PROGMEM = R"rawliteral(
 </div>
 
 <div class="card">
-  <h2>&#128247; Your Photos</h2>
+  <h2>Your Photos</h2>
   <p class="photo-count" id="photoCount"></p>
   <ul class="photo-list" id="photoList"></ul>
 </div>
 
 <div class="card">
-  <h2>&#9881;&#65039; Settings</h2>
+  <h2>Settings</h2>
   <div class="setting-row">
     <label>Change photo every:</label>
     <select id="interval">
-      <option value="60">1 minute</option>
-      <option value="300">5 minutes</option>
-      <option value="600">10 minutes</option>
-      <option value="1800">30 minutes</option>
       <option value="3600" selected>1 hour</option>
       <option value="7200">2 hours</option>
+      <option value="10800">3 hours</option>
       <option value="14400">4 hours</option>
       <option value="21600">6 hours</option>
       <option value="43200">12 hours</option>
@@ -891,7 +890,7 @@ const char WEBPAGE_HTML[] PROGMEM = R"rawliteral(
 </div>
 
 <button class="btn-start" id="btnStart" onclick="startSlideshow()">
-  &#9654;&#65039; Start Slideshow
+  Start Slideshow
 </button>
 
 <script>
