@@ -1,21 +1,21 @@
 # Ink Frame Lab
 
-A browser-based tool for preparing images for e-ink picture frames. It dithers photos down to the limited colour palettes used by e-paper displays and exports ready-to-use PNG files for uploading. A 3D viewer is included to visualize the result in different lighting conditions at different angles.
+A browser-based tool for preparing images for e-ink picture frames. Start by importing images, and cropping them to the aspect ratio and resolution of your e-ink panel. Then preview the results in a 3D view in different lighting conditions at different angles. It dithers photos down to the limited colour palettes used by e-paper displays and exports ready-to-use PNG files for uploading.
 
 A web version can be accessed [here](https://psmyles.github.io/ink-frame-lab/).
 
-## Features
+## Workflow
 
-- Import one or more images via drag-and-drop or file picker
-- Crop and fit each image to the target display resolution
-- Dither using error diffusion (Floyd-Steinberg, Atkinson, Jarvis, and more), ordered (Bayer), random noise, or plain quantization
-- Choose from built-in palettes (Default B&W, Waveshare Spectra 6, Gallery AcEP 7c) or enter custom hex colours
-- Preview the result in a 3D frame mockup with configurable image based lighting presets
-- Export as individual PNG files or a ZIP archive, numbered for direct firmware upload
+* Import one or more images via drag-and-drop or file picker
+* Crop and fit each image to the target display resolution
+* Dither using error diffusion (Floyd-Steinberg, Atkinson, Jarvis, and more), ordered (Bayer), random noise, or plain quantization
+* Choose from built-in palettes (Default B\&W, Waveshare Spectra 6, Gallery AcEP 7c) or enter custom hex colours
+* Preview the result in a 3D frame mockup with configurable image based lighting presets
+* Export as individual PNG files or a ZIP archive, numbered for direct firmware upload
 
 ## Supported displays
 
-Resolution presets are included for common Waveshare displays. Any custom resolution can be entered manually.
+Resolution presets are included for common e-ink displays. Any custom resolution and related color palette values can be entered manually.
 
 ## Running
 
@@ -46,7 +46,7 @@ IBL/              environment maps for the 3D viewer
 
 ## Credits
 
-- **[Three.js](https://threejs.org/)** - 3D rendering, used for the frame viewer, IBL lighting, and post-processing pipeline (OrbitControls, RoomEnvironment, RGBELoader, EffectComposer, GTAOPass, OutputPass). MIT License.
-- **[JSZip](https://stuk.github.io/jszip/)** - client-side ZIP archive creation for the Export ZIP feature. MIT License.
-- **[Inter](https://rsms.me/inter/)** - UI typeface by Rasmus Andersson, served via Google Fonts. SIL Open Font License.
-- **Dithering algorithms** - error diffusion kernels (Floyd-Steinberg, Atkinson, False Floyd-Steinberg, Jarvis-Judice-Ninke, Stucki, Burkes, Sierra-3, Sierra-2, Sierra-2-4A), ordered Bayer matrix, and random noise dithering are original implementations of published public-domain techniques.
+* [**Three.js**](https://threejs.org/) - 3D rendering, used for the frame viewer, IBL lighting, and post-processing pipeline (OrbitControls, RoomEnvironment, RGBELoader, EffectComposer, GTAOPass, OutputPass). MIT License.
+* [**JSZip**](https://stuk.github.io/jszip/) - client-side ZIP archive creation for the Export ZIP feature. MIT License.
+* [**Inter**](https://rsms.me/inter/) - UI typeface by Rasmus Andersson, served via Google Fonts. SIL Open Font License.
+* **Dithering algorithms** - error diffusion kernels (Floyd-Steinberg, Atkinson, False Floyd-Steinberg, Jarvis-Judice-Ninke, Stucki, Burkes, Sierra-3, Sierra-2, Sierra-2-4A), ordered Bayer matrix, and random noise dithering are original implementations of published public-domain techniques.
