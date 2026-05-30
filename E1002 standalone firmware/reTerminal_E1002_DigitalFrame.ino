@@ -257,18 +257,39 @@ int pngDraw(PNGDRAW *pDraw) {
 
 bool initSD() {
   pinMode(SD_EN_PIN, OUTPUT);
-  digitalWrite(SD_EN_PIN, HIGH);
-  delay(100);
-  digitalWrite(EPD_CS_PIN, HIGH);
-  if (!SD.begin(SD_CS_PIN, hspi)) {
-    Serial1.println("SD Card mount failed!");
-    return false;
+
+  // Try mounting the SD card with retries and power cycling.
+  // After ESP.restart(), the card may be in an inconsistent state
+  // and needs a full power cycle to recover.
+  const int maxRetries = 3;
+
+  for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    Serial1.printf("SD init attempt %d/%d...\n", attempt, maxRetries);
+
+    // Power cycle the SD card slot
+    digitalWrite(SD_EN_PIN, LOW);
+    delay(200);  // Let power fully drain
+    digitalWrite(SD_EN_PIN, HIGH);
+    delay(300);  // Let card power up and stabilize
+
+    // Ensure display CS is deselected so SD has exclusive SPI bus
+    digitalWrite(EPD_CS_PIN, HIGH);
+
+    if (SD.begin(SD_CS_PIN, hspi)) {
+      Serial1.println("SD Card mounted.");
+      if (!SD.exists(IMAGES_FOLDER)) {
+        SD.mkdir(IMAGES_FOLDER);
+      }
+      return true;
+    }
+
+    Serial1.printf("SD mount attempt %d failed.\n", attempt);
+    SD.end();  // Clean up before retry
+    delay(200);
   }
-  Serial1.println("SD Card mounted.");
-  if (!SD.exists(IMAGES_FOLDER)) {
-    SD.mkdir(IMAGES_FOLDER);
-  }
-  return true;
+
+  Serial1.println("SD Card mount failed after all retries!");
+  return false;
 }
 
 void deinitSD() {
@@ -406,11 +427,29 @@ void drawBatteryBar(int percent) {
  */
 bool decodePNGToBuffer(const char *imagePath) {
   if (!frameBuffer) {
-    frameBuffer = (uint8_t *)ps_malloc(SCREEN_WIDTH * SCREEN_HEIGHT);
-    if (!frameBuffer) {
-      Serial1.println("PSRAM allocation failed!");
-      return false;
-    }
+    Serial1.println("Frame buffer not allocated!");
+    return false;
+  }
+
+  // Verify the file is readable and check PNG header
+  File testFile = SD.open(imagePath, FILE_READ);
+  if (!testFile) {
+    Serial1.printf("Cannot open file: %s\n", imagePath);
+    return false;
+  }
+  size_t fileSize = testFile.size();
+  Serial1.printf("File: %s, size: %d bytes\n", imagePath, fileSize);
+
+  // Check PNG magic bytes (89 50 4E 47 = .PNG)
+  uint8_t header[8];
+  int bytesRead = testFile.read(header, 8);
+  testFile.close();
+
+  if (bytesRead < 8 || header[0] != 0x89 || header[1] != 0x50 ||
+      header[2] != 0x4E || header[3] != 0x47) {
+    Serial1.printf("Not a valid PNG file! Header: %02X %02X %02X %02X\n",
+                   header[0], header[1], header[2], header[3]);
+    return false;
   }
 
   memset(frameBuffer, PAL_WHITE, SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -420,7 +459,7 @@ bool decodePNGToBuffer(const char *imagePath) {
   int rc = png.open(imagePath, pngOpen, pngClose, pngRead, pngSeek, pngDraw);
   if (rc != PNG_SUCCESS) {
     Serial1.printf("PNG open failed for %s: error %d\n", imagePath, rc);
-    if (pngFile) pngFile.close();  // Ensure file handle is freed
+    if (pngFile) pngFile.close();
     return false;
   }
 
@@ -1129,11 +1168,17 @@ void handleStart() {
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_OFF);
 
-  deinitSD();  // Properly unmount SD before restart
-
+  // Show transition screen while SD is still available
+  initDisplay();
   displayStartingScreen(finalCount, displayTime / 60);
-  delay(3000);
-  ESP.restart();
+
+  // Shut everything down and deep sleep for 2 seconds.
+  // Waking from deep sleep is a true cold boot (full hardware reset),
+  // which avoids the SD card SPI issues caused by ESP.restart().
+  deinitSD();
+  display.hibernate();
+  esp_sleep_enable_timer_wakeup(2 * 1000000ULL);  // 2 seconds
+  esp_deep_sleep_start();
 }
 
 // =============================================================================
@@ -1192,11 +1237,15 @@ void runSetupMode() {
         WiFi.softAPdisconnect(true);
         WiFi.mode(WIFI_OFF);
 
-        deinitSD();  // Properly unmount SD before restart
-
+        // Show transition screen while SD is still available
+        initDisplay();
         displayStartingScreen(finalCount, displayTime / 60);
-        delay(3000);
-        ESP.restart();
+
+        // Deep sleep for 2 seconds → true cold boot → SD inits cleanly
+        deinitSD();
+        display.hibernate();
+        esp_sleep_enable_timer_wakeup(2 * 1000000ULL);
+        esp_deep_sleep_start();
       }
     }
 
@@ -1361,6 +1410,29 @@ void setup() {
     return;
   }
 
+  // Allocate PSRAM frame buffer once, before the retry loop
+  Serial1.printf("Free heap: %d, PSRAM total: %d, PSRAM free: %d\n",
+                 ESP.getFreeHeap(), ESP.getPsramSize(), ESP.getFreePsram());
+
+  if (!frameBuffer) {
+    if (ESP.getPsramSize() == 0) {
+      Serial1.println("ERROR: No PSRAM detected! Enable OPI PSRAM in board settings.");
+      deinitSD();
+      initDisplay();
+      displayError("PSRAM not available!\n\nIn Arduino IDE, go to:\nTools > PSRAM > OPI PSRAM\nthen re-upload the firmware.");
+      while (true) { delay(1000); }
+    }
+    frameBuffer = (uint8_t *)ps_malloc(SCREEN_WIDTH * SCREEN_HEIGHT);
+    if (!frameBuffer) {
+      Serial1.println("ERROR: PSRAM allocation failed!");
+      deinitSD();
+      initDisplay();
+      displayError("Memory allocation failed!\n\nPSRAM detected but could not\nallocate frame buffer.");
+      while (true) { delay(1000); }
+    }
+    Serial1.printf("Frame buffer allocated: %d bytes in PSRAM\n", SCREEN_WIDTH * SCREEN_HEIGHT);
+  }
+
   int batteryPercent = getBatteryPercent();
 
   // Determine what triggered this wake (for sequential mode direction)
@@ -1382,13 +1454,11 @@ void setup() {
     if (SD.exists(imagePath) && decodePNGToBuffer(imagePath.c_str())) {
       decoded = true;
       lastImageIndex = imageIndex;
-      // Update sequential index to match what we actually displayed
       if (sequentialMode) {
-        sequentialIndex = imageIndex - 1;  // Convert back to 0-based
+        sequentialIndex = imageIndex - 1;
       }
     } else {
       Serial1.printf("Image #%d failed, trying next...\n", imageIndex);
-      // Skip to next/previous image in the retry direction
       imageIndex += retryDirection;
       if (imageIndex > imageCount) imageIndex = 1;
       if (imageIndex < 1) imageIndex = imageCount;

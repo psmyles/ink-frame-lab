@@ -13,9 +13,9 @@ import { ensureProcessed, getCroppedCanvas } from './export.js';
 // Background colour only — scene is lit entirely by IBL.
 const ENV_PRESETS = {
   livingRoom: { bg: 0x6a6258 },
-  gallery:    { bg: 0x9a9690 },
-  outdoor:    { bg: 0x5888a8 },
-  night:      { bg: 0x08080f },
+  gallery: { bg: 0x9a9690 },
+  outdoor: { bg: 0x5888a8 },
+  night: { bg: 0x08080f },
 };
 
 // ─── MODULE STATE ─────────────────────────────────────────────
@@ -30,14 +30,14 @@ let pmremGenerator = null;
 // Display adjustments — applied at canvas level before uploading as texture.
 // Values calibrated against a real Spectra 6 display in indoor lighting.
 const adj = {
-  exposure:    0.89,
-  contrast:    0.91,
-  saturation:  1.00,
+  exposure: 0.89,
+  contrast: .8,
+  saturation: 1.5,
   temperature: 2,
-  tint:        0,
-  shadows:     0,
-  midtones:    0,
-  highlights:  0,
+  tint: 0,
+  shadows: 0,
+  midtones: 0,
+  highlights: 0,
 };
 
 // ─── INIT ─────────────────────────────────────────────────────
@@ -111,12 +111,12 @@ export function initViewer3d(canvas) {
 
 // ─── SCENE GEOMETRY ──────────────────────────────────────────
 function buildScene() {
-  const asp    = state.aspectRatio;
-  const W      = 1.0;
-  const H      = W / asp;
+  const asp = state.aspectRatio;
+  const W = 1.0;
+  const H = W / asp;
   const border = 0.075;
-  const depth  = 0.065;
-  const mat    = 0.052;
+  const depth = 0.065;
+  const mat = 0.052;
 
   // Frame — white/cream painted wood
   const frameMat = new THREE.MeshStandardMaterial({
@@ -137,10 +137,10 @@ function buildScene() {
     mesh.position.set(px, py, 0);
     frameGroup.add(mesh);
   };
-  addBar(totalW, border, 0,                      innerH / 2 + border / 2);
-  addBar(totalW, border, 0,                     -innerH / 2 - border / 2);
+  addBar(totalW, border, 0, innerH / 2 + border / 2);
+  addBar(totalW, border, 0, -innerH / 2 - border / 2);
   addBar(border, innerH, -innerW / 2 - border / 2, 0);
-  addBar(border, innerH,  innerW / 2 + border / 2, 0);
+  addBar(border, innerH, innerW / 2 + border / 2, 0);
 
   const backMat = new THREE.MeshStandardMaterial({
     color: 0xd8d0c4, roughness: 0.9, metalness: 0.0,
@@ -281,7 +281,7 @@ function applyDisplayAdjustments(src) {
     g = applyTones(g);
     b = applyTones(b);
 
-    px[i]     = Math.max(0, Math.min(255, r));
+    px[i] = Math.max(0, Math.min(255, r));
     px[i + 1] = Math.max(0, Math.min(255, g));
     px[i + 2] = Math.max(0, Math.min(255, b));
   }
@@ -411,5 +411,5 @@ function animate() {
 }
 
 export function startAnimation() { animating = true; animate(); }
-export function stopAnimation()  { animating = false; }
-export function isReady()        { return !!renderer; }
+export function stopAnimation() { animating = false; }
+export function isReady() { return !!renderer; }
