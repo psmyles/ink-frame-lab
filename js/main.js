@@ -12,7 +12,7 @@ import {
   initViewer3d,
   resetCamera, toggleZoom, toggleOrbit,
   resizeViewer, onEnter3dView, rebuildFrame, isReady,
-  loadIBLByPath, setIBLIntensity,
+  loadIBLByPath, setIBLIntensity, setFrameStyle,
 } from './viewer3d.js';
 
 // ─── QUEUE MANAGEMENT ────────────────────────────────────────
@@ -63,8 +63,21 @@ async function switchTab(tab) {
 }
 
 // ─── RESOLUTION CHANGE ───────────────────────────────────────
-function onResolutionChange() {
-  if (isReady() && state.viewTab === '3d') rebuildFrame();
+async function onResolutionChange() {
+  doResetCrop();   // recompute auto-fit crop to new aspect ratio; marks item pending
+  updateUIState(); // refreshes cropRatioLabel and toolbar state
+
+  const item = getSelected();
+  if (state.viewTab === 'firmware') {
+    if (item && item.status !== 'processing') {
+      await ensureProcessed(item);
+      renderFirmwareView();
+    }
+  } else if (state.viewTab === '3d' && isReady()) {
+    rebuildFrame();
+    await onEnter3dView();
+  }
+  // Image view: doResetCrop() already called renderPreview()
 }
 
 // ─── DRAG & DROP ─────────────────────────────────────────────
@@ -128,6 +141,11 @@ function initIBLPicker() {
   const iblSlider = document.getElementById('iblSlider');
   iblSlider.addEventListener('input', () => {
     if (isReady()) setIBLIntensity(parseFloat(iblSlider.value));
+  });
+
+  // Frame style
+  document.getElementById('frameStyle').addEventListener('change', e => {
+    if (isReady()) setFrameStyle(e.target.value);
   });
 }
 

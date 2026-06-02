@@ -7,6 +7,7 @@
         "w": 800,
         "h": 480
       },
+      "diagonal": 7.3,
       "palette": "spectra6"
     },
     {
@@ -16,6 +17,7 @@
         "w": 648,
         "h": 480
       },
+      "diagonal": 5.83,
       "palette": "spectra6"
     },
     {
@@ -25,6 +27,7 @@
         "w": 800,
         "h": 480
       },
+      "diagonal": 7.3,
       "palette": "gallery"
     },
     {
@@ -34,6 +37,7 @@
         "w": 600,
         "h": 448
       },
+      "diagonal": 5.7,
       "palette": "gallery"
     },
     {
@@ -43,6 +47,7 @@
         "w": 640,
         "h": 400
       },
+      "diagonal": 4.0,
       "palette": "spectra6"
     }
   ],

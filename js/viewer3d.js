@@ -20,7 +20,19 @@ const ENV_PRESETS = {
 
 // ─── MODULE STATE ─────────────────────────────────────────────
 let renderer, composer, gtaoPass, scene, camera, controls;
-let frameGroup, displayMesh, glassMesh, matMesh, wallMesh;
+let frameGroup, displayMesh, matMesh, wallMesh;
+let frameMat = null;
+let currentFrameStyle = 'white';
+let brushedMetalTex = null;
+
+const FRAME_STYLES = {
+  white: { color: 0xf0ece4, roughness: 0.72, metalness: 0.0, envMapIntensity: 0.6, metal: false },
+  wood: { color: 0x8a6040, roughness: 0.85, metalness: 0.0, envMapIntensity: 0.5, metal: false },
+  black: { color: 0x1e1e1e, roughness: 0.80, metalness: 0.0, envMapIntensity: 0.4, metal: false },
+  bronze: { color: 0xBE8C58, roughness: 0.60, metalness: 0.9, envMapIntensity: 1.2, metal: true },
+  silver: { color: 0xE8ECF8, roughness: 0.60, metalness: 0.9, envMapIntensity: 1.2, metal: true },
+  gold: { color: 0xFFD468, roughness: 0.60, metalness: 0.9, envMapIntensity: 1.2, metal: true },
+};
 let displayTexture;
 let rawDisplayCanvas = null;   // unmodified canvas; kept so adj changes can re-apply
 let animating = false;
@@ -105,6 +117,18 @@ export function initViewer3d(canvas) {
   // Auto-load the first IBL image (non-blocking)
   loadIBLByPath('./IBL/IBL_01.jpg');
 
+  // Load brushed metal roughness map (non-blocking; applied once ready)
+  new THREE.TextureLoader().loadAsync('./brushed_metal.jpg').then(tex => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(0.07, 0.07);
+    brushedMetalTex = tex;
+    if (frameMat && FRAME_STYLES[currentFrameStyle]?.metal) {
+      frameMat.map = tex;
+      frameMat.roughnessMap = tex;
+      frameMat.needsUpdate = true;
+    }
+  });
+
   animating = true;
   animate();
 }
@@ -112,18 +136,23 @@ export function initViewer3d(canvas) {
 // ─── SCENE GEOMETRY ──────────────────────────────────────────
 function buildScene() {
   const asp = state.aspectRatio;
-  const W = 1.0;
+  const INCHES_PER_UNIT = 6.0;
+  const diag = state.diagonal || 7.3;
+  const W = (diag * asp / Math.sqrt(asp * asp + 1)) / INCHES_PER_UNIT;
   const H = W / asp;
   const border = 0.075;
-  const depth = 0.065;
+  const depth = 0.082;
   const mat = 0.052;
 
-  // Frame — white/cream painted wood
-  const frameMat = new THREE.MeshStandardMaterial({
-    color: 0xf0ece4,
-    roughness: 0.72,
-    metalness: 0.0,
-    envMapIntensity: 0.6,
+  // Frame material — driven by currentFrameStyle
+  const style = FRAME_STYLES[currentFrameStyle] || FRAME_STYLES.white;
+  frameMat = new THREE.MeshStandardMaterial({
+    color: style.color,
+    roughness: style.roughness,
+    metalness: style.metalness,
+    envMapIntensity: style.envMapIntensity,
+    map: style.metal && brushedMetalTex ? brushedMetalTex : null,
+    roughnessMap: style.metal && brushedMetalTex ? brushedMetalTex : null,
   });
 
   frameGroup = new THREE.Group();
@@ -171,22 +200,6 @@ function buildScene() {
   displayMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), displayMat);
   displayMesh.position.z = depth / 2 - 0.013;
   scene.add(displayMesh);
-
-  // Glass
-  const glassMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    transmission: 0.90,
-    roughness: 0.04,
-    metalness: 0.0,
-    thickness: 0.003,
-    envMapIntensity: 2.0,
-    transparent: true,
-    opacity: 0.12,
-    side: THREE.FrontSide,
-  });
-  glassMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), glassMat);
-  glassMesh.position.z = depth / 2 - 0.010;
-  scene.add(glassMesh);
 
   // Wall/surface behind frame
   const wallMat = new THREE.MeshStandardMaterial({
@@ -389,7 +402,7 @@ export async function onEnter3dView() {
 // ─── FRAME REBUILD ────────────────────────────────────────────
 export function rebuildFrame() {
   if (!scene) return;
-  for (const obj of [frameGroup, displayMesh, glassMesh, matMesh, wallMesh]) {
+  for (const obj of [frameGroup, displayMesh, matMesh, wallMesh]) {
     if (obj) scene.remove(obj);
   }
   buildScene();
@@ -397,9 +410,18 @@ export function rebuildFrame() {
   if (item?.ditheredCanvas) updateDisplayTexture(item.ditheredCanvas);
 }
 
-// ─── GLASS TOGGLE ─────────────────────────────────────────────
-export function setGlassVisible(visible) {
-  if (glassMesh) glassMesh.visible = visible;
+// ─── FRAME STYLE ──────────────────────────────────────────────
+export function setFrameStyle(style) {
+  currentFrameStyle = style;
+  if (!frameMat) return;
+  const s = FRAME_STYLES[style] || FRAME_STYLES.white;
+  frameMat.color.setHex(s.color);
+  frameMat.roughness = s.roughness;
+  frameMat.metalness = s.metalness;
+  frameMat.envMapIntensity = s.envMapIntensity;
+  frameMat.map = s.metal && brushedMetalTex ? brushedMetalTex : null;
+  frameMat.roughnessMap = s.metal && brushedMetalTex ? brushedMetalTex : null;
+  frameMat.needsUpdate = true;
 }
 
 // ─── RENDER LOOP ─────────────────────────────────────────────

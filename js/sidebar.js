@@ -94,6 +94,9 @@ export function initSidebar(devices) {
   document.getElementById('toggleDithering').addEventListener('click', () => {
     togglePanel('toggleDithering', 'ditheringPanel');
   });
+  document.getElementById('toggleFrame').addEventListener('click', () => {
+    togglePanel('toggleFrame', 'framePanel');
+  });
 
   updatePaletteSwatch();
   syncAspectFromResolution();
@@ -131,11 +134,13 @@ function applyPreset(p) {
   document.getElementById('customResWrap').classList.add('hidden');
   state.resolution = { w, h };
   state.aspectRatio = w / h;
+  if (p.diagonal) state.diagonal = p.diagonal;
   if (p.palette) {
     const sel = document.getElementById('palette');
     sel.value = p.palette;
     sel.dispatchEvent(new Event('change'));
   }
+  document.getElementById('resW').dispatchEvent(new Event('change'));
 }
 
 function syncAspectFromResolution() {

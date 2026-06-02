@@ -4,6 +4,7 @@ export const state = {
   viewTab: 'image',     // 'image' | '3d'
   resolution: { w: 800, h: 480 },
   aspectRatio: 800 / 480,
+  diagonal: 7.3,
   isProcessing: false,
 };
 

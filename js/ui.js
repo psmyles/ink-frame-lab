@@ -182,8 +182,9 @@ export function updateUIState() {
 
   // 3D controls
   const in3d = state.viewTab === '3d';
-  document.getElementById('controls3d').style.display = in3d ? 'flex' : 'none';
-  document.getElementById('iblPicker').style.display  = in3d ? 'flex' : 'none';
+  document.getElementById('controls3d').style.display      = in3d ? 'flex' : 'none';
+  document.getElementById('iblPicker').style.display       = in3d ? 'flex' : 'none';
+  document.getElementById('framePanelSection').style.display = in3d ? '' : 'none';
 }
 
 function updateCropToolbar() {
