@@ -50,3 +50,4 @@ IBL/              environment maps for the 3D viewer
 * [**JSZip**](https://stuk.github.io/jszip/) - client-side ZIP archive creation for the Export ZIP feature. MIT License.
 * [**Inter**](https://rsms.me/inter/) - UI typeface by Rasmus Andersson, served via Google Fonts. SIL Open Font License.
 * **Dithering algorithms** - error diffusion kernels (Floyd-Steinberg, Atkinson, False Floyd-Steinberg, Jarvis-Judice-Ninke, Stucki, Burkes, Sierra-3, Sierra-2, Sierra-2-4A), ordered Bayer matrix, and random noise dithering are original implementations of published public-domain techniques.
+* [**polyhaven.com**](https://polyhaven.com/hdris) - images used for image based lighting in the 3D view.
