@@ -74,7 +74,7 @@ export async function processAll() {
   state.isProcessing = true;
   updateUIState();
 
-  const btns = ['exportFilesBtn','exportZipBtn'].map(id => document.getElementById(id));
+  const btns = ['exportFilesBtn', 'exportZipBtn'].map(id => document.getElementById(id));
   btns.forEach(b => { b.disabled = true; b.textContent = '⏳ Processing…'; });
 
   let doneCount = 0;
@@ -126,9 +126,9 @@ export async function downloadFiles() {
     let saved = 0;
     try {
       for (let i = 0; i < done.length; i++) {
-        const blob  = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
-        const fh    = await dir.getFileHandle(getFilename(done[i], i), { create: true });
-        const w     = await fh.createWritable();
+        const blob = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
+        const fh = await dir.getFileHandle(getFilename(done[i], i), { create: true });
+        const w = await fh.createWritable();
         await w.write(blob);
         await w.close();
         saved++;
@@ -140,7 +140,7 @@ export async function downloadFiles() {
   } else {
     // Firefox / Safari — individual automatic downloads
     for (let i = 0; i < done.length; i++) {
-      const blob  = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
+      const blob = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = getFilename(done[i], i);
@@ -170,10 +170,10 @@ export async function downloadZip() {
     const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(zipBlob);
-    a.download = 'epd-export.zip';
+    a.download = 'ink-frame-lab-export.zip';
     a.click();
     URL.revokeObjectURL(a.href);
-    toast(`✓ Downloaded ${done.length} image${done.length !== 1 ? 's' : ''} as epd-export.zip`, 'success');
+    toast(`✓ Downloaded ${done.length} image${done.length !== 1 ? 's' : ''} as ink-frame-lab-export.zip`, 'success');
   } catch (e) {
     toast('ZIP export failed: ' + e.message, 'error');
   }
@@ -187,12 +187,12 @@ export async function downloadCurrent() {
   if (item.status !== 'done') await ensureProcessed(item);
   if (!item.deviceCanvas && !item.ditheredCanvas) { toast('Processing failed.', 'error'); return; }
 
-  const canvas   = item.deviceCanvas || item.ditheredCanvas;
+  const canvas = item.deviceCanvas || item.ditheredCanvas;
   const baseName = item.name.replace(/\.[^.]+$/, '');
-  const blob     = await canvasToBlob(canvas);
-  const a        = document.createElement('a');
-  a.href         = URL.createObjectURL(blob);
-  a.download     = baseName + '.png';
+  const blob = await canvasToBlob(canvas);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = baseName + '.png';
   a.click();
   URL.revokeObjectURL(a.href);
   toast(`✓ Exported ${baseName}.png`, 'success');
