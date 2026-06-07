@@ -49,7 +49,7 @@ export function getAdjustmentsFromUI() {
     shadowBoost:          parseFloat(document.getElementById('adjShadowBoost').value)       || 0.2,
     highlightCompress:    parseFloat(document.getElementById('adjHighlightCompress').value) || 2.0,
     midpoint:             parseFloat(document.getElementById('adjMidpoint').value)          || 0.5,
-    saturation:           parseFloat(document.getElementById('adjSaturation').value)        || 1.0,
+    saturation:           parseFloat(document.getElementById('adjSaturation').value)        || 1.3,
     exposure:             parseFloat(document.getElementById('adjExposure').value)          || 1.0,
   };
 }

@@ -44,19 +44,19 @@ async function switchTab(tab) {
   const canvasFirmware = document.getElementById('canvasFirmware');
   const canvas3d       = document.getElementById('canvas3d');
 
+  const item = getSelected();
   canvas2d.style.display       = tab === 'image'    ? 'block' : 'none';
   canvasFirmware.style.display = tab === 'firmware' ? 'block' : 'none';
-  canvas3d.style.display       = tab === '3d'       ? 'block' : 'none';
+  canvas3d.style.display       = tab === '3d' && item ? 'block' : 'none';
 
   updateUIState();
 
   if (tab === 'image') {
     renderPreview();
   } else if (tab === 'firmware') {
-    const item = getSelected();
     if (item && item.status !== 'done') await ensureProcessed(item);
     renderFirmwareView();
-  } else {
+  } else if (item) {
     if (!isReady()) initViewer3d(canvas3d);
     await onEnter3dView();
   }
@@ -157,7 +157,6 @@ async function onSettingsChange() {
   item.status = 'pending';
   item.ditheredCanvas = null;
   item.deviceCanvas = null;
-  const { refreshFilmItem, updateStats } = await import('./ui.js');
   refreshFilmItem(item);
   updateStats();
 
@@ -237,8 +236,13 @@ function init() {
     if (state.viewTab === 'firmware') {
       if (item && item.status !== 'done') await ensureProcessed(item);
       renderFirmwareView();
-    } else if (state.viewTab === '3d' && isReady()) {
-      await onEnter3dView();
+    } else if (state.viewTab === '3d') {
+      const c3d = document.getElementById('canvas3d');
+      c3d.style.display = item ? 'block' : 'none';
+      if (item) {
+        if (!isReady()) initViewer3d(c3d);
+        await onEnter3dView();
+      }
     }
   });
 
@@ -258,6 +262,14 @@ function init() {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', onAdjChange);
   }
+
+  // Rename mode toggle
+  document.querySelectorAll('input[name="renameMode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const numerical = document.querySelector('input[name="renameMode"]:checked').value === 'numerical';
+      document.getElementById('renameStartNumWrap').style.display = numerical ? 'flex' : 'none';
+    });
+  });
 
   initAdjustmentSliders();
   initIBLPicker();

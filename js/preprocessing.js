@@ -123,7 +123,7 @@ export function applySaturation(imageData, saturation) {
 
   for (let i = 0; i < src.length; i += 4) {
     const { h, s, l } = rgbToHsl(src[i], src[i + 1], src[i + 2]);
-    const [r, g, b]   = hslToRgb(h, Math.min(1, s * saturation), l);
+    const [r, g, b]   = hslToRgb(h, Math.max(0, Math.min(1, s * saturation)), l);
     dst[i]     = r;
     dst[i + 1] = g;
     dst[i + 2] = b;
