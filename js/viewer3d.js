@@ -117,10 +117,9 @@ export function initViewer3d(canvas) {
   // Auto-load the first IBL image (non-blocking)
   loadIBLByPath('./IBL/IBL_01.jpg');
 
-  // Load brushed metal roughness map (non-blocking; applied once ready)
+  // Load brushed metal texture (non-blocking; applied once ready)
   new THREE.TextureLoader().loadAsync('./brushed_metal.jpg').then(tex => {
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(0.07, 0.07);
     brushedMetalTex = tex;
     if (frameMat && FRAME_STYLES[currentFrameStyle]?.metal) {
       frameMat.map = tex;
@@ -131,6 +130,63 @@ export function initViewer3d(canvas) {
 
   animating = true;
   animate();
+}
+
+// ─── TRIPLANAR PROJECTION ─────────────────────────────────────
+// Patches a MeshStandardMaterial to sample map and roughnessMap using world-space
+// triplanar projection instead of UV coordinates, so texture orientation is
+// consistent across all box faces regardless of their UV layout.
+function applyTriplanar(mat, scale) {
+  mat.onBeforeCompile = shader => {
+    shader.uniforms.triScale = { value: scale };
+
+    shader.vertexShader = 'varying vec3 vTriPos;\nvarying vec3 vTriNorm;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
+      vTriPos  = (modelMatrix * vec4(transformed, 1.0)).xyz;
+      vTriNorm = normalize(objectNormal);`,
+    );
+
+    shader.fragmentShader = `
+varying vec3 vTriPos;
+varying vec3 vTriNorm;
+uniform float triScale;
+
+vec4 triSample(sampler2D tex, vec3 pos, vec3 norm, float sc) {
+  vec3 w = abs(norm);
+  w = pow(w, vec3(8.0));
+  w /= w.x + w.y + w.z;
+  return texture2D(tex, pos.yz * sc) * w.x
+       + texture2D(tex, pos.xz * sc) * w.y
+       + texture2D(tex, pos.xy * sc) * w.z;
+}
+` + shader.fragmentShader;
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#ifdef USE_MAP
+        vec4 sampledDiffuseColor = triSample(map, vTriPos, vTriNorm, triScale);
+        #ifdef DECODE_VIDEO_TEXTURE
+          sampledDiffuseColor = vec4(mix(
+            pow(sampledDiffuseColor.rgb * 0.9478672986 + vec3(0.0521327014), vec3(2.4)),
+            sampledDiffuseColor.rgb * 0.0773993808,
+            vec3(lessThanEqual(sampledDiffuseColor.rgb, vec3(0.04045)))
+          ), sampledDiffuseColor.w);
+        #endif
+        diffuseColor *= sampledDiffuseColor;
+      #endif`,
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <roughnessmap_fragment>',
+      `float roughnessFactor = roughness;
+      #ifdef USE_ROUGHNESSMAP
+        vec4 texelRoughness = triSample(roughnessMap, vTriPos, vTriNorm, triScale);
+        roughnessFactor *= texelRoughness.g;
+      #endif`,
+    );
+  };
 }
 
 // ─── SCENE GEOMETRY ──────────────────────────────────────────
@@ -154,6 +210,7 @@ function buildScene() {
     map: style.metal && brushedMetalTex ? brushedMetalTex : null,
     roughnessMap: style.metal && brushedMetalTex ? brushedMetalTex : null,
   });
+  applyTriplanar(frameMat, 0.8);
 
   frameGroup = new THREE.Group();
   const innerW = W + mat * 2;

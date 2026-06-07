@@ -2,7 +2,7 @@ import { state, createItem, getSelected } from './state.js';
 import { loadPresets } from './dithering.js';
 import { initSidebar, buildPaletteSelect, getAdjustmentsFromUI, loadAdjustmentsToUI } from './sidebar.js';
 import {
-  renderFilmstrip, selectItem, showDropZone,
+  renderFilmstrip, refreshFilmItem, selectItem, showDropZone,
   updateUIState, updateStats, loadSourceImage,
   startCropEdit, applyAndExitCropEdit, cancelCropEdit, doAutoFit, doResetCrop,
   renderPreview, renderFirmwareView, toast, setOnSelectCallback,
@@ -129,7 +129,6 @@ function initIBLPicker() {
       const label = opt.dataset.label;
       if (isReady()) await loadIBLByPath(path);
       document.getElementById('iblPickerThumb').src = path;
-      document.getElementById('iblPickerLabel').textContent = label;
       document.querySelectorAll('.ibl-option').forEach(o => o.classList.remove('active'));
       opt.classList.add('active');
       dropdown.classList.add('hidden');
