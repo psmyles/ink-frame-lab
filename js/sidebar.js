@@ -1,7 +1,17 @@
 import { PALETTES, DEVICE_COLORS } from './dithering.js';
 import { state } from './state.js';
 
-
+const ADJ_DEFAULTS = {
+  compressDynamicRange: true,
+  toneMode:             'contrast',
+  contrast:             1.0,
+  strength:             0.5,
+  shadowBoost:          0.2,
+  highlightCompress:    2.0,
+  midpoint:             0.5,
+  saturation:           1.3,
+  exposure:             1.0,
+};
 
 export function getOptions() {
   const paletteKey = document.getElementById('palette').value;
@@ -26,7 +36,37 @@ export function getOptions() {
     orderedW:      parseInt(document.getElementById('orderedW').value) || 4,
     orderedH:      parseInt(document.getElementById('orderedH').value) || 4,
     randomType:    document.getElementById('randomType').value,
+    preprocessing: { enabled: true, ...getAdjustmentsFromUI() },
   };
+}
+
+export function getAdjustmentsFromUI() {
+  return {
+    compressDynamicRange: document.getElementById('adjCompressDR').checked,
+    toneMode:             document.getElementById('adjToneMode').value,
+    contrast:             parseFloat(document.getElementById('adjContrast').value)          || 1.0,
+    strength:             parseFloat(document.getElementById('adjSCurveStrength').value)    || 0.5,
+    shadowBoost:          parseFloat(document.getElementById('adjShadowBoost').value)       || 0.2,
+    highlightCompress:    parseFloat(document.getElementById('adjHighlightCompress').value) || 2.0,
+    midpoint:             parseFloat(document.getElementById('adjMidpoint').value)          || 0.5,
+    saturation:           parseFloat(document.getElementById('adjSaturation').value)        || 1.0,
+    exposure:             parseFloat(document.getElementById('adjExposure').value)          || 1.0,
+  };
+}
+
+// Loads adj values into UI silently (no change events fired — won't trigger re-processing).
+export function loadAdjustmentsToUI(adj) {
+  const a = adj || ADJ_DEFAULTS;
+  document.getElementById('adjCompressDR').checked = a.compressDynamicRange;
+  setSliderVal('adjToneMode',          a.toneMode);
+  setSliderVal('adjContrast',          a.contrast);
+  setSliderVal('adjSCurveStrength',    a.strength);
+  setSliderVal('adjShadowBoost',       a.shadowBoost);
+  setSliderVal('adjHighlightCompress', a.highlightCompress);
+  setSliderVal('adjMidpoint',          a.midpoint);
+  setSliderVal('adjSaturation',        a.saturation);
+  setSliderVal('adjExposure',          a.exposure);
+  updateToneSectionVisibility();
 }
 
 export function updatePaletteSwatch() {
@@ -98,6 +138,15 @@ export function initSidebar(devices) {
     togglePanel('toggleFrame', 'framePanel');
   });
 
+  document.getElementById('toggleAdjustments').addEventListener('click', () => {
+    togglePanel('toggleAdjustments', 'adjustmentsPanel');
+  });
+
+  document.getElementById('adjToneMode').addEventListener('change', updateToneSectionVisibility);
+
+  document.getElementById('adjResetBtn').addEventListener('click', resetAdjustmentsToDefaults);
+
+  loadAdjustmentsToUI(null); // apply defaults on load
   updatePaletteSwatch();
   syncAspectFromResolution();
 }
@@ -156,6 +205,25 @@ function togglePanel(btnId, panelId) {
   const panel = document.getElementById(panelId);
   const open  = panel.classList.toggle('hidden');
   btn.classList.toggle('active', !open);
+}
+
+function updateToneSectionVisibility() {
+  const v = document.getElementById('adjToneMode').value;
+  document.getElementById('adjContrastSection').classList.toggle('hidden', v !== 'contrast');
+  document.getElementById('adjSCurveSection').classList.toggle('hidden',   v !== 'scurve');
+}
+
+// Resets current image's adj values to defaults; dispatches change on adjSaturation
+// so main.js onAdjChange picks it up, saves defaults to item, and re-processes.
+function resetAdjustmentsToDefaults() {
+  loadAdjustmentsToUI(null);
+  document.getElementById('adjSaturation').dispatchEvent(new Event('change'));
+}
+
+function setSliderVal(id, value) {
+  const el = document.getElementById(id);
+  el.value = value;
+  el.dispatchEvent(new Event('input'));
 }
 
 function hexToRgb(hex) {

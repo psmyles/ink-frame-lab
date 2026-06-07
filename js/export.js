@@ -39,6 +39,10 @@ export async function processItem(item) {
 
   try {
     const opts = getOptions();
+    // Per-image adjustments override the global UI values for this item
+    if (item.adjustments) {
+      opts.preprocessing = { enabled: true, ...item.adjustments };
+    }
     const inputCanvas = getCroppedCanvas(item);
     const { dithered, deviceResult } = processImage(inputCanvas, opts);
 

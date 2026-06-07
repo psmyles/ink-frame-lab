@@ -22,5 +22,6 @@ export function createItem(file) {
     ditheredCanvas: null,
     deviceCanvas: null,
     cropRect: null,          // { x, y, w, h } in source image pixels
+    adjustments: null,       // per-image preprocessing settings; null = use defaults
   };
 }

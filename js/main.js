@@ -1,6 +1,6 @@
 import { state, createItem, getSelected } from './state.js';
 import { loadPresets } from './dithering.js';
-import { initSidebar, buildPaletteSelect } from './sidebar.js';
+import { initSidebar, buildPaletteSelect, getAdjustmentsFromUI, loadAdjustmentsToUI } from './sidebar.js';
 import {
   renderFilmstrip, selectItem, showDropZone,
   updateUIState, updateStats, loadSourceImage,
@@ -12,7 +12,7 @@ import {
   initViewer3d,
   resetCamera, toggleZoom, toggleOrbit,
   resizeViewer, onEnter3dView, rebuildFrame, isReady,
-  loadIBLByPath, setIBLIntensity, setFrameStyle,
+  loadIBLByPath, setIBLIntensity, setFrameStyle, updateDisplayTexture,
 } from './viewer3d.js';
 
 // ─── QUEUE MANAGEMENT ────────────────────────────────────────
@@ -166,7 +166,32 @@ async function onSettingsChange() {
     renderFirmwareView();
   } else if (state.viewTab === '3d' && isReady()) {
     await ensureProcessed(item);
-    onEnter3dView();
+    if (item.ditheredCanvas) updateDisplayTexture(item.ditheredCanvas);
+  }
+}
+
+// Adj controls are per-image: save to item before re-processing.
+async function onAdjChange() {
+  const item = getSelected();
+  if (item) item.adjustments = getAdjustmentsFromUI();
+  await onSettingsChange();
+}
+
+// ─── ADJUSTMENT SLIDER DISPLAY ───────────────────────────────
+function initAdjustmentSliders() {
+  const sliders = [
+    ['adjContrast',          'adjContrastVal',          v => v.toFixed(2)],
+    ['adjSCurveStrength',    'adjSCurveStrengthVal',    v => v.toFixed(2)],
+    ['adjShadowBoost',       'adjShadowBoostVal',       v => v.toFixed(2)],
+    ['adjHighlightCompress', 'adjHighlightCompressVal', v => v.toFixed(1)],
+    ['adjMidpoint',          'adjMidpointVal',          v => v.toFixed(2)],
+    ['adjSaturation',        'adjSaturationVal',        v => v.toFixed(2)],
+    ['adjExposure',          'adjExposureVal',          v => v.toFixed(2)],
+  ];
+  for (const [id, valId, fmt] of sliders) {
+    const el  = document.getElementById(id);
+    const vEl = document.getElementById(valId);
+    if (el && vEl) el.addEventListener('input', () => { vEl.textContent = fmt(parseFloat(el.value)); });
   }
 }
 
@@ -205,8 +230,11 @@ function init() {
 
   // Keep active view in sync when filmstrip selection changes
   setOnSelectCallback(async (id) => {
+    const item = state.queue.find(q => q.id === id);
+    // Load this image's adj values into UI before processing/viewing
+    if (item) loadAdjustmentsToUI(item.adjustments);
+
     if (state.viewTab === 'firmware') {
-      const item = state.queue.find(q => q.id === id);
       if (item && item.status !== 'done') await ensureProcessed(item);
       renderFirmwareView();
     } else if (state.viewTab === '3d' && isReady()) {
@@ -214,14 +242,24 @@ function init() {
     }
   });
 
-  // Re-process active view when palette or dithering settings change
-  const settingsIds = ['palette','ditheringType','edMatrix','serpentine',
-                       'orderedW','orderedH','randomType','customPalette'];
-  for (const id of settingsIds) {
+  // Global settings (palette, dithering) — change applies to all images
+  const globalIds = ['palette','ditheringType','edMatrix','serpentine',
+                     'orderedW','orderedH','randomType','customPalette'];
+  for (const id of globalIds) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', onSettingsChange);
   }
 
+  // Per-image adjustment controls — saved to the item before re-processing
+  const adjIds = ['adjCompressDR','adjToneMode',
+                  'adjContrast','adjSCurveStrength','adjShadowBoost',
+                  'adjHighlightCompress','adjMidpoint','adjSaturation','adjExposure'];
+  for (const id of adjIds) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', onAdjChange);
+  }
+
+  initAdjustmentSliders();
   initIBLPicker();
   initDragDrop();
   initResizeObserver();

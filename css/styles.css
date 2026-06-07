@@ -666,6 +666,7 @@ input[type="range"]::-moz-range-thumb {
   padding: 10px 0 6px 0;
   border-bottom: 1px solid var(--border);
   margin-bottom: 2px;
+  overflow-x: hidden;
 }
 
 .sub-panel-content.hidden { display: none; }
@@ -721,6 +722,13 @@ select option { background: #1e2023; }
 .conditional.hidden { max-height: 0; opacity: 0; pointer-events: none; display: unset !important; }
 
 .palette-swatch { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+
+/* ─── IMAGE ADJUSTMENTS PANEL ───────────────────────────── */
+.adj-slider-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; width: 100%; }
+.adj-slider-row .field-name { width: 90px; flex-shrink: 0; }
+.adj-slider { flex: 1; width: 0; min-width: 0; }
+.adj-val { font-size: 11px; color: var(--text); width: 30px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+label.field.adj-row { flex-direction: row; align-items: center; justify-content: space-between; }
 .swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 
 /* ─── BUTTONS ────────────────────────────────────────── */

@@ -1,3 +1,5 @@
+import { applyPreprocessing } from './preprocessing.js';
+
 // Calibrated colors — what the physical display actually renders.
 // Used as the dithering palette so error diffusion works against realistic colours.
 // Each entry's index corresponds to the same index in DEVICE_COLORS (pure RGB for firmware export).
@@ -180,7 +182,14 @@ export function replaceColors(imageData, srcPalette, devPalette) {
 export function processImage(sourceCanvas, options) {
   const { palette, deviceColors, ditheringType, edMatrix, serpentine, orderedW, orderedH, randomType } = options;
   const ctx = sourceCanvas.getContext('2d');
-  const imageData = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+  let imageData = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+  if (options.preprocessing?.enabled) {
+    const blackRgb = palette.colors[0];
+    const whiteRgb = palette.colors[1];
+    imageData = applyPreprocessing(imageData, options.preprocessing, blackRgb, whiteRgb);
+  }
+
   let dithered;
   switch (ditheringType) {
     case 'errorDiffusion':
