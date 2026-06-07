@@ -165,6 +165,8 @@ export function updateUIState() {
   document.getElementById('selectionHint').style.display =
     hasItems && !item ? 'flex' : 'none';
 
+  document.querySelector('.rename-section').style.display = hasItems ? '' : 'none';
+
   const exportDisabled = !hasItems || state.isProcessing;
   document.getElementById('exportFilesBtn').disabled   = exportDisabled;
   document.getElementById('exportZipBtn').disabled     = exportDisabled;
@@ -180,10 +182,10 @@ export function updateUIState() {
   document.getElementById('cropSizeInfo').style.display =
     inImage && item && cropEditing ? 'block' : 'none';
 
-  // 3D controls
+  // 3D controls — only show overlays when there's actually an image to view
   const in3d = state.viewTab === '3d';
-  document.getElementById('controls3d').style.display      = in3d ? 'flex' : 'none';
-  document.getElementById('iblPicker').style.display       = in3d ? 'flex' : 'none';
+  document.getElementById('controls3d').style.display      = in3d && item ? 'flex' : 'none';
+  document.getElementById('iblPicker').style.display       = in3d && item ? 'flex' : 'none';
   document.getElementById('framePanelSection').style.display = in3d ? '' : 'none';
 }
 

@@ -47,8 +47,8 @@
           <div class="drop-zone active" id="dropZone">
             <div class="drop-box" id="dropBox">
               <input type="file" id="fileInput" accept="image/*" multiple>
-              <div class="drop-icon">⬚</div>
-              <div class="drop-hint">Drop images here or <b>click to browse</b><br>PNG, JPG, WebP · Multiple files OK
+              <div class="drop-hint">Drop images here or <b>click to browse</b><br>PNG, JPG, WebP · Multiple files can
+                be imported together.
               </div>
             </div>
           </div>
@@ -255,7 +255,8 @@
                 </div>
                 <div class="adj-slider-row">
                   <span class="field-name">Highlight Compress</span>
-                  <input type="range" id="adjHighlightCompress" class="adj-slider" min="1.0" max="4.0" step="0.1" value="2.0">
+                  <input type="range" id="adjHighlightCompress" class="adj-slider" min="1.0" max="4.0" step="0.1"
+                    value="2.0">
                   <span class="adj-val" id="adjHighlightCompressVal">2.0</span>
                 </div>
                 <div class="adj-slider-row">
@@ -277,7 +278,8 @@
                 <span class="adj-val" id="adjExposureVal">1.00</span>
               </div>
 
-              <button class="btn btn-ghost btn-sm" id="adjResetBtn" style="align-self:flex-end;margin-top:4px;">Reset</button>
+              <button class="btn btn-ghost btn-sm" id="adjResetBtn"
+                style="align-self:flex-end;margin-top:4px;">Reset</button>
             </div>
 
             <div id="framePanelSection" style="display:none;">
@@ -309,10 +311,26 @@
         <!-- Bottom actions -->
         <div class="sidebar-bottom">
           <div id="statsText" style="font-size:11px;color:var(--text-dim);text-align:center;min-height:16px;"></div>
-          <div class="field-row">
-            <span class="field-label">Start #</span>
-            <input type="number" id="exportStartNum" value="1" min="0" style="width:80px;">
+
+          <!-- Rename section -->
+          <div class="rename-section" style="display:none;">
+            <span class="rename-label">Rename images</span>
+            <div class="rename-options">
+              <label class="radio-option">
+                <input type="radio" name="renameMode" value="original" checked>
+                <span>Original file name</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="renameMode" value="numerical">
+                <span>Numerical</span>
+              </label>
+            </div>
+            <div class="rename-startnum" id="renameStartNumWrap" style="display:none;">
+              <span class="field-label">Start #</span>
+              <input type="number" id="exportStartNum" value="1" min="0">
+            </div>
           </div>
+
           <button class="btn btn-secondary btn-full" id="importBtn">Import Images</button>
           <div class="export-btn-row">
             <button class="btn btn-secondary btn-full" id="exportFilesBtn" disabled
@@ -338,6 +356,12 @@
     </div>
 
   </div><!-- /app -->
+
+  <footer class="app-footer">
+    <span class="app-footer-title">Ink Frame Lab</span>
+    <a class="app-footer-link" href="https://github.com/psmyles/ink-frame-lab" target="_blank" rel="noopener">View
+      source on GitHub</a>
+  </footer>
 
   <div class="toast-container" id="toastContainer"></div>
 

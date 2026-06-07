@@ -103,11 +103,16 @@ function getStartNumber() {
   return parseInt(document.getElementById('exportStartNum')?.value) || 1;
 }
 
+function getFilename(item, index) {
+  const mode = document.querySelector('input[name="renameMode"]:checked')?.value ?? 'original';
+  if (mode === 'numerical') return `${getStartNumber() + index}.png`;
+  return item.name.replace(/\.[^.]+$/, '') + '.png';
+}
+
 // ─── EXPORT FILES (folder picker or individual downloads) ────
 export async function downloadFiles() {
   const done = await processAndGetDone();
   if (!done) return;
-  const startNum = getStartNumber();
 
   if ('showDirectoryPicker' in window) {
     // Chrome / Edge — single folder picker
@@ -122,8 +127,7 @@ export async function downloadFiles() {
     try {
       for (let i = 0; i < done.length; i++) {
         const blob  = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
-        const fname = `${startNum + i}.png`;
-        const fh    = await dir.getFileHandle(fname, { create: true });
+        const fh    = await dir.getFileHandle(getFilename(done[i], i), { create: true });
         const w     = await fh.createWritable();
         await w.write(blob);
         await w.close();
@@ -137,10 +141,9 @@ export async function downloadFiles() {
     // Firefox / Safari — individual automatic downloads
     for (let i = 0; i < done.length; i++) {
       const blob  = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
-      const fname = `${startNum + i}.png`;
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = fname;
+      a.download = getFilename(done[i], i);
       a.click();
       URL.revokeObjectURL(a.href);
       await new Promise(res => setTimeout(res, 150)); // small delay between triggers
@@ -157,12 +160,11 @@ export async function downloadZip() {
   toast('Preparing ZIP…');
   try {
     const { default: JSZip } = await import('https://esm.sh/jszip@3.10.1');
-    const zip      = new JSZip();
-    const startNum = getStartNumber();
+    const zip = new JSZip();
 
     for (let i = 0; i < done.length; i++) {
       const blob = await canvasToBlob(done[i].deviceCanvas || done[i].ditheredCanvas);
-      zip.file(`${startNum + i}.png`, blob);
+      zip.file(getFilename(done[i], i), blob);
     }
 
     const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
